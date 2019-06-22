@@ -1,5 +1,5 @@
-dist: trusty
-sudo: false
+dist: xenial
+sudo: true
 language: cpp
 
 addons:
@@ -7,8 +7,18 @@ addons:
     sources:
       - ubuntu-toolchain-r-test
     packages:
-      - g++-5
+      - g++-7
+
+matrix:
+  include:
+    - os: linux
+      before_install:
+        - git clone https://github.com/catchorg/Catch2.git
+        - cd Catch2
+        - cmake -Bbuild -H. -DBUILD_TESTING=OFF
+        - sudo env "PATH=$PATH" cmake --build build/ --target install
+        - cd ..
 
 script:
-  - CXX=/usr/bin/g++-5 CC=/usr/bin/gcc-5 cmake .
+  - CXX=/usr/bin/g++-7 CC=/usr/bin/gcc-5 cmake .
   - cmake --build . -- -j2
