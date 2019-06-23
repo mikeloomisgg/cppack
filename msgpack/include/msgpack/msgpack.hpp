@@ -52,9 +52,9 @@ struct is_map<std::map<T, Alloc> > {
 class Packer {
  public:
   template<class ... Types>
-  void process(Types &&... args) {
+  void process(Types &... args) {
     std::clog << "Attempting to pack " << sizeof...(args) << " values.\n";
-    (process_type(std::forward<Types>(args)), ...);
+    (process_type(args), ...);
   }
 
   std::vector<uint8_t> vector() const {
@@ -67,9 +67,9 @@ class Packer {
   template<class T>
   void process_type(T &value) {
     if (is_map<T>::value) {
-      processMap(std::forward<T &>(value));
+      processMap(value);
     } else if (is_container<T>::value) {
-      processArray(std::forward<T &>(value));
+      processArray(value);
     } else {
       std::clog << "Packing value type: " << "Unknown" << '\n';
     }
@@ -161,18 +161,18 @@ class Unpacker {
   explicit Unpacker(uint8_t *data_start) {};
 
   template<class ... Types>
-  void process(Types &&... args) {
+  void process(Types &... args) {
     std::clog << "Attempting to unpack " << sizeof...(args) << " values.\n";
-    (process_type(std::forward<Types>(args)), ...);
+    (process_type(args), ...);
   }
 
  private:
   template<class T>
   void process_type(T &value) {
     if (is_map<T>::value) {
-      processMap(std::forward<T &>(value));
+      processMap(value);
     } else if (is_container<T>::value) {
-      processArray(std::forward<T &>(value));
+      processArray(value);
     } else {
       std::clog << "Unpacking value type: " << "Unknown" << '\n';
     }
