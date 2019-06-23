@@ -67,9 +67,9 @@ class Packer {
   template<class T>
   void process_type(T &value) {
     if (is_map<T>::value) {
-      processMap(std::forward<T>(value));
+      processMap(std::forward<T &>(value));
     } else if (is_container<T>::value) {
-      processArray(std::forward<T>(value));
+      processArray(std::forward<T &>(value));
     } else {
       std::clog << "Packing value type: " << "Unknown" << '\n';
     }
@@ -170,9 +170,9 @@ class Unpacker {
   template<class T>
   void process_type(T &value) {
     if (is_map<T>::value) {
-      processMap(std::forward<T>(value));
+      processMap(std::forward<T &>(value));
     } else if (is_container<T>::value) {
-      processArray(std::forward<T>(value));
+      processArray(std::forward<T &>(value));
     } else {
       std::clog << "Unpacking value type: " << "Unknown" << '\n';
     }
