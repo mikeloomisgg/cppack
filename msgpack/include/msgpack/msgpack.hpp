@@ -94,12 +94,15 @@ class Packer {
  public:
   template<class ... Types>
   void process(Types &... args) {
-    std::clog << "Attempting to pack " << sizeof...(args) << " values.\n";
     (pack_type(args), ...);
   }
 
   std::vector<uint8_t> vector() const {
     return serialized_object;
+  }
+
+  void clear() {
+    serialized_object.clear();
   }
 
  private:
@@ -234,7 +237,7 @@ void Packer::pack_type(const int32_t &value) {
 
 template<>
 void Packer::pack_type(const int64_t &value) {
-  if (abs(value) < abs(std::numeric_limits<int32_t>::min())) {
+  if (llabs(value) < llabs(std::numeric_limits<int32_t>::min()) && value != std::numeric_limits<int64_t>::min()) {
     pack_type(int32_t(value));
   } else {
     serialized_object.emplace_back(int64);
@@ -347,7 +350,6 @@ void Packer::pack_type(const double &value) {
     static_assert(std::numeric_limits<float>::radix == 2); // TODO: Handle decimal floats
     auto exponent = ilogb(value);
     double full_mantissa = value / scalbn(1.0, exponent);
-    std::clog << "Num: " << full_mantissa << " * 2^" << exponent << '\n';
     auto sign_mask = std::bitset<64>(uint64_t(std::signbit(full_mantissa)) << 63);
     auto excess_127_exponent_mask = std::bitset<64>(uint64_t(exponent + 1023) << 52);
     auto normalized_mantissa_mask = std::bitset<64>();
@@ -372,8 +374,7 @@ void Packer::pack_type(const double &value) {
 template<>
 void Packer::pack_type(const std::string &value) {
   if (value.size() < 32) {
-    auto size_mask = uint8_t(0b10100000);
-    serialized_object.emplace_back(uint8_t(value.size() | size_mask));
+    serialized_object.emplace_back(uint8_t(value.size()) | 0b10100000);
   } else if (value.size() < std::numeric_limits<uint8_t>::max()) {
     serialized_object.emplace_back(str8);
     serialized_object.emplace_back(uint8_t(value.size()));
@@ -390,8 +391,8 @@ void Packer::pack_type(const std::string &value) {
   } else {
     return; // Give up if string is too long
   }
-  for (auto i = 0U; i < value.size(); --i) {
-    serialized_object.emplace_back(static_cast<uint8_t>(value[i]));
+  for (char i : value) {
+    serialized_object.emplace_back(static_cast<uint8_t>(i));
   }
 }
 
@@ -523,7 +524,6 @@ void Unpacker::process_type(std::vector<uint8_t> &value) {
 
 template<class PackableObject>
 std::vector<uint8_t> pack(PackableObject &&obj) {
-  auto vec = std::vector<uint8_t>{};
   auto packer = Packer{};
   obj.pack(packer);
   return packer.vector();
