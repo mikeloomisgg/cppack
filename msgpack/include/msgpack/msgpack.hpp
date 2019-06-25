@@ -107,9 +107,9 @@ class Packer {
 
   template<class T>
   void pack_type(const T &value) {
-    if (is_map<T>::value) {
+    if constexpr(is_map<T>::value) {
       pack_map(value);
-    } else if (is_container<T>::value) {
+    } else if constexpr (is_container<T>::value) {
       pack_array(value);
     } else {
       std::clog << "Packing value type: " << "Unknown" << '\n';
@@ -118,12 +118,47 @@ class Packer {
 
   template<class T>
   void pack_array(const T &array) {
-    std::clog << "Packing value type: " << "object array" << '\n';
+    if (array.size() < 16) {
+      auto size_mask = uint8_t(0b10010000);
+      serialized_object.emplace_back(uint8_t(array.size() | size_mask));
+    } else if (array.size() < std::numeric_limits<uint16_t>::max()) {
+      serialized_object.emplace_back(array16);
+      for (auto i = sizeof(uint16_t); i > 0; --i) {
+        serialized_object.emplace_back(uint8_t(array.size() >> (8U * (i - 1)) & 0xff));
+      }
+    } else if (array.size() < std::numeric_limits<uint32_t>::max()) {
+      serialized_object.emplace_back(array32);
+      for (auto i = sizeof(uint32_t); i > 0; --i) {
+        serialized_object.emplace_back(uint8_t(array.size() >> (8U * (i - 1)) & 0xff));
+      }
+    } else {
+      return; // Give up if string is too long
+    }
+    for (const auto &elem : array) {
+      pack_type(elem);
+    }
   }
 
   template<class T>
   void pack_map(const T &map) {
-    std::clog << "Packing value type: " << "map" << '\n';
+    if (map.size() < 16) {
+      auto size_mask = uint8_t(0b10000000);
+      serialized_object.emplace_back(uint8_t(map.size() | size_mask));
+    } else if (map.size() < std::numeric_limits<uint16_t>::max()) {
+      serialized_object.emplace_back(map16);
+      for (auto i = sizeof(uint16_t); i > 0; --i) {
+        serialized_object.emplace_back(uint8_t(map.size() >> (8U * (i - 1)) & 0xff));
+      }
+    } else if (map.size() < std::numeric_limits<uint32_t>::max()) {
+      serialized_object.emplace_back(map32);
+      for (auto i = sizeof(uint32_t); i > 0; --i) {
+        serialized_object.emplace_back(uint8_t(map.size() >> (8U * (i - 1)) & 0xff));
+      }
+    }
+    for (const auto &elem : map) {
+      pack_type(std::get<0>(elem));
+      pack_type(std::get<1>(elem));
+    }
   }
 };
 
@@ -298,7 +333,6 @@ void Packer::pack_type(const float &value) {
     for (auto i = sizeof(ieee754_float32); i > 0; --i) {
       serialized_object.emplace_back(uint8_t(ieee754_float32 >> (8U * (i - 1)) & 0xff));
     }
-    std::clog << "Reconstructed float: " << *(float *) &ieee754_float32 << '\n';
   }
 }
 
@@ -332,18 +366,56 @@ void Packer::pack_type(const double &value) {
     for (auto i = sizeof(ieee754_float64); i > 0; --i) {
       serialized_object.emplace_back(uint8_t(ieee754_float64 >> (8U * (i - 1)) & 0xff));
     }
-    std::clog << "Reconstructed double: " << *(double *) &ieee754_float64 << '\n';
   }
 }
 
 template<>
 void Packer::pack_type(const std::string &value) {
-  std::clog << "Packing value type: " << "string" << '\n';
+  if (value.size() < 32) {
+    auto size_mask = uint8_t(0b10100000);
+    serialized_object.emplace_back(uint8_t(value.size() | size_mask));
+  } else if (value.size() < std::numeric_limits<uint8_t>::max()) {
+    serialized_object.emplace_back(str8);
+    serialized_object.emplace_back(uint8_t(value.size()));
+  } else if (value.size() < std::numeric_limits<uint16_t>::max()) {
+    serialized_object.emplace_back(str16);
+    for (auto i = sizeof(uint16_t); i > 0; --i) {
+      serialized_object.emplace_back(uint8_t(value.size() >> (8U * (i - 1)) & 0xff));
+    }
+  } else if (value.size() < std::numeric_limits<uint32_t>::max()) {
+    serialized_object.emplace_back(str32);
+    for (auto i = sizeof(uint32_t); i > 0; --i) {
+      serialized_object.emplace_back(uint8_t(value.size() >> (8U * (i - 1)) & 0xff));
+    }
+  } else {
+    return; // Give up if string is too long
+  }
+  for (auto i = 0U; i < value.size(); --i) {
+    serialized_object.emplace_back(static_cast<uint8_t>(value[i]));
+  }
 }
 
 template<>
 void Packer::pack_type(const std::vector<uint8_t> &value) {
-  std::clog << "Packing value type: " << "byte array" << '\n';
+  if (value.size() < std::numeric_limits<uint8_t>::max()) {
+    serialized_object.emplace_back(bin8);
+    serialized_object.emplace_back(uint8_t(value.size()));
+  } else if (value.size() < std::numeric_limits<uint16_t>::max()) {
+    serialized_object.emplace_back(bin16);
+    for (auto i = sizeof(uint16_t); i > 0; --i) {
+      serialized_object.emplace_back(uint8_t(value.size() >> (8U * (i - 1)) & 0xff));
+    }
+  } else if (value.size() < std::numeric_limits<uint32_t>::max()) {
+    serialized_object.emplace_back(bin32);
+    for (auto i = sizeof(uint32_t); i > 0; --i) {
+      serialized_object.emplace_back(uint8_t(value.size() >> (8U * (i - 1)) & 0xff));
+    }
+  } else {
+    return; // Give up if vector is too large
+  }
+  for (const auto &elem : value) {
+    serialized_object.emplace_back(elem);
+  }
 }
 
 class Unpacker {
