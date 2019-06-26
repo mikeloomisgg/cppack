@@ -37,91 +37,113 @@ TEST_CASE("Boolean type packing") {
 }
 
 TEST_CASE("Integer type packing") {
-  uint8_t x1 = 0x1;
-  uint16_t x2 = 0x1111;
-  uint32_t x3 = 0x11111111;
-  uint64_t x4 = 0x1111111111111111;
-  uint8_t x5 = std::numeric_limits<uint8_t>::max();
-
-  int8_t y1 = -1;
-  int16_t y2 = std::numeric_limits<int8_t>::min() - 1;
-  int32_t y3 = std::numeric_limits<int16_t>::min() - 1;
-  int64_t y4 = std::numeric_limits<int64_t>::min();
-  int64_t y5 = std::numeric_limits<int64_t>::min() + 1;
-  int64_t y6 = 0;
-
   auto packer = msgpack::Packer{};
-  packer.process(x1);
-  REQUIRE(packer.vector() == std::vector<uint8_t>{0x1});
-  packer.clear();
-  packer.process(x2);
-  REQUIRE(packer.vector() == std::vector<uint8_t>{0xcd, 0x11, 0x11});
-  packer.clear();
-  packer.process(x3);
-  REQUIRE(packer.vector() == std::vector<uint8_t>{0xce, 0x11, 0x11, 0x11, 0x11});
-  packer.clear();
-  packer.process(x4);
-  REQUIRE(packer.vector() == std::vector<uint8_t>{0xcf, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11});
-  packer.clear();
-  packer.process(x5);
-  REQUIRE(packer.vector() == std::vector<uint8_t>{0xcc, 0xff});
+  auto unpacker = msgpack::Unpacker{};
 
-  packer.clear();
-  packer.process(y1);
-  REQUIRE(packer.vector() == std::vector<uint8_t>{0xff});
-  packer.clear();
-  packer.process(y2);
-  REQUIRE(packer.vector() == std::vector<uint8_t>{0xd1, 0xff, 0x7f});
-  packer.clear();
-  packer.process(y3);
-  REQUIRE(packer.vector() == std::vector<uint8_t>{0xd2, 0xff, 0xff, 0x7f, 0xff});
-  packer.clear();
-  packer.process(y4);
-  REQUIRE(packer.vector() == std::vector<uint8_t>{0xd3, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
-  packer.clear();
-  packer.process(y5);
-  REQUIRE(packer.vector() == std::vector<uint8_t>{0xd3, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01});
-  packer.clear();
-  packer.process(y6);
-  REQUIRE(packer.vector() == std::vector<uint8_t>{0x00});
+  for (auto i = 0U; i < 10; ++i) {
+    uint8_t test_num = i * std::numeric_limits<uint8_t>::max() / 10;
+    packer.clear();
+    packer.process(test_num);
+    uint8_t x = 0U;
+    unpacker.set_data(packer.vector().data());
+    unpacker.process(x);
+    REQUIRE(x == test_num);
+  }
+
+  for (auto i = 0U; i < 10; ++i) {
+    uint16_t test_num = i * std::numeric_limits<uint16_t>::max() / 10;
+    packer.clear();
+    packer.process(test_num);
+    uint16_t x = 0U;
+    unpacker.set_data(packer.vector().data());
+    unpacker.process(x);
+    REQUIRE(x == test_num);
+  }
+
+  for (auto i = 0U; i < 10; ++i) {
+    uint32_t test_num = i * std::numeric_limits<uint32_t>::max() / 10;
+    packer.clear();
+    packer.process(test_num);
+    uint32_t x = 0U;
+    unpacker.set_data(packer.vector().data());
+    unpacker.process(x);
+    REQUIRE(x == test_num);
+  }
+
+  for (auto i = 0U; i < 10; ++i) {
+    uint64_t test_num = i * std::numeric_limits<uint64_t>::max() / 10;
+    packer.clear();
+    packer.process(test_num);
+    uint64_t x = 0U;
+    unpacker.set_data(packer.vector().data());
+    unpacker.process(x);
+    REQUIRE(x == test_num);
+  }
+
+  for (auto i = -5; i < 5; ++i) {
+    int8_t test_num = i * std::numeric_limits<int8_t>::max() / 5;
+    packer.clear();
+    packer.process(test_num);
+    int8_t x = 0;
+    unpacker.set_data(packer.vector().data());
+    unpacker.process(x);
+    REQUIRE(x == test_num);
+  }
+
+  for (auto i = -5; i < 5; ++i) {
+    int16_t test_num = i * std::numeric_limits<int16_t>::max() / 5;
+    packer.clear();
+    packer.process(test_num);
+    int16_t x = 0;
+    unpacker.set_data(packer.vector().data());
+    unpacker.process(x);
+    REQUIRE(x == test_num);
+  }
+
+  for (auto i = -5; i < 5; ++i) {
+    int32_t test_num = i * std::numeric_limits<int32_t>::max() / 5;
+    packer.clear();
+    packer.process(test_num);
+    int32_t x = 0;
+    unpacker.set_data(packer.vector().data());
+    unpacker.process(x);
+    REQUIRE(x == test_num);
+  }
+
+  for (auto i = -5; i < 5; ++i) {
+    int64_t test_num = i * std::numeric_limits<int64_t>::max() / 5;
+    packer.clear();
+    packer.process(test_num);
+    int64_t x = 0;
+    unpacker.set_data(packer.vector().data());
+    unpacker.process(x);
+    REQUIRE(x == test_num);
+  }
 }
 
 TEST_CASE("Float type packing") {
-  float x1 = 0.0f;
-  float x2 = -0.0f;
-  float x3 = 12345.67f;
-  float x4 = -12345.6789f;
-
-  double y1 = 0.0;
-  double y2 = -0.0;
-  double y3 = 12345.67;
-  double y4 = -12345.67;
-
   auto packer = msgpack::Packer{};
-  packer.process(x1);
-  REQUIRE(packer.vector() == std::vector<uint8_t>{0x00});
-  packer.clear();
-  packer.process(x2);
-  REQUIRE(packer.vector() == std::vector<uint8_t>{0x00});
-  packer.clear();
-  packer.process(x3);
-  REQUIRE(packer.vector() == std::vector<uint8_t>{0xca, 0x46, 0x40, 0xe6, 0xae});
-  packer.clear();
-  packer.process(x4);
-  REQUIRE(packer.vector() == std::vector<uint8_t>{0xca, 0xc6, 0x40, 0xe6, 0xb7});
+  auto unpacker = msgpack::Unpacker{};
 
-  packer.clear();
-  packer.process(y1);
-  REQUIRE(packer.vector() == std::vector<uint8_t>{0x00});
-  packer.clear();
-  packer.process(y2);
-  REQUIRE(packer.vector() == std::vector<uint8_t>{0x00});
-  packer.clear();
-  packer.process(y3);
-  REQUIRE(packer.vector() == std::vector<uint8_t>{0xcb, 0x40, 0xc8, 0x1c, 0xd5, 0xc2, 0x8f, 0x5c, 0x29});
-  packer.clear();
-  packer.process(y4);
-  REQUIRE(packer.vector() == std::vector<uint8_t>{0xcb, 0xc0, 0xc8, 0x1c, 0xd5, 0xc2, 0x8f, 0x5c, 0x29});
+  for (auto i = -5; i < 5; ++i) {
+    float test_num = 5.0f + float(i) * 12345.67f / 4.56f;
+    packer.clear();
+    packer.process(test_num);
+    float x = 0.0f;
+    unpacker.set_data(packer.vector().data());
+    unpacker.process(x);
+    REQUIRE(x == test_num);
+  }
+
+  for (auto i = -5; i < 5; ++i) {
+    double test_num = 5.0 + double(i) * 12345.67 / 4.56;
+    packer.clear();
+    packer.process(test_num);
+    double x = 0.0;
+    unpacker.set_data(packer.vector().data());
+    unpacker.process(x);
+    REQUIRE(x == test_num);
+  }
 }
 
 TEST_CASE("String type packing") {

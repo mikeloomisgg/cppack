@@ -97,7 +97,7 @@ class Packer {
     (pack_type(args), ...);
   }
 
-  std::vector<uint8_t> vector() const {
+  const std::vector<uint8_t> &vector() const {
     return serialized_object;
   }
 
@@ -115,7 +115,7 @@ class Packer {
     } else if constexpr (is_container<T>::value) {
       pack_array(value);
     } else {
-      std::clog << "Packing value type: " << "Unknown" << '\n';
+      std::cerr << "Unknown type\n";
     }
   }
 
@@ -260,7 +260,7 @@ void Packer::pack_type(const uint8_t &value) {
 
 template<>
 void Packer::pack_type(const uint16_t &value) {
-  if (value >= std::numeric_limits<uint8_t>::max()) {
+  if (value > std::numeric_limits<uint8_t>::max()) {
     serialized_object.emplace_back(uint16);
     for (auto i = sizeof(value); i > 0U; --i) {
       serialized_object.emplace_back(uint8_t(value >> (8U * (i - 1)) & 0xff));
@@ -272,7 +272,7 @@ void Packer::pack_type(const uint16_t &value) {
 
 template<>
 void Packer::pack_type(const uint32_t &value) {
-  if (value >= std::numeric_limits<uint16_t>::max()) {
+  if (value > std::numeric_limits<uint16_t>::max()) {
     serialized_object.emplace_back(uint32);
     for (auto i = sizeof(value); i > 0U; --i) {
       serialized_object.emplace_back(uint8_t(value >> (8U * (i - 1)) & 0xff));
@@ -284,7 +284,7 @@ void Packer::pack_type(const uint32_t &value) {
 
 template<>
 void Packer::pack_type(const uint64_t &value) {
-  if (value >= std::numeric_limits<uint32_t>::max()) {
+  if (value > std::numeric_limits<uint32_t>::max()) {
     serialized_object.emplace_back(uint64);
     for (auto i = sizeof(value); i > 0U; --i) {
       serialized_object.emplace_back(uint8_t(value >> (8U * (i - 1)) & 0xff));
@@ -421,104 +421,275 @@ void Packer::pack_type(const std::vector<uint8_t> &value) {
 
 class Unpacker {
  public:
-  explicit Unpacker(uint8_t *data_start) {};
+  Unpacker() : data_pointer(nullptr) {};
+
+  explicit Unpacker(const uint8_t *data_start) : data_pointer(data_start) {};
 
   template<class ... Types>
   void process(Types &... args) {
-    std::clog << "Attempting to unpack " << sizeof...(args) << " values.\n";
-    (process_type(args), ...);
+    (unpack_type(args), ...);
+  }
+
+  void set_data(const uint8_t *pointer) {
+    data_pointer = pointer;
   }
 
  private:
+  const uint8_t *data_pointer;
+
   template<class T>
-  void process_type(T &value) {
-    if (is_map<T>::value) {
-      processMap(value);
-    } else if (is_container<T>::value) {
-      processArray(value);
+  void unpack_type(T &value) {
+    if constexpr(is_map<T>::value) {
+      unpack_map(value);
+    } else if constexpr (is_container<T>::value) {
+      unpack_array(value);
     } else {
-      std::clog << "Unpacking value type: " << "Unknown" << '\n';
+      std::cerr << "Unknown type\n";
     }
   }
 
   template<class T>
-  void processArray(T &array) {
+  void unpack_array(T &array) {
     std::clog << "Unpacking value type: " << "object array" << '\n';
   }
 
   template<class T>
-  void processMap(T &map) {
+  void unpack_map(T &map) {
     std::clog << "Unpacking value type: " << "map" << '\n';
   }
 };
 
 template<>
-void Unpacker::process_type(int8_t &value) {
-  std::clog << "Unpacking value type: " << "int8_t" << '\n';
+void Unpacker::unpack_type(int8_t &value) {
+  if (*data_pointer == int8) {
+    value = *++data_pointer;
+    data_pointer++;
+  } else {
+    value = *data_pointer++;
+  }
 }
 
 template<>
-void Unpacker::process_type(int16_t &value) {
-  std::clog << "Unpacking value type: " << "int16_t" << '\n';
+void Unpacker::unpack_type(int16_t &value) {
+  if (*data_pointer == int16) {
+    for (auto i = sizeof(int16_t); i > 0; --i) {
+      value += *++data_pointer << 8 * (i - 1);
+    }
+    data_pointer++;
+  } else if (*data_pointer == int8) {
+    value = *++data_pointer;
+    data_pointer++;
+  } else {
+    value = *data_pointer++;
+  }
 }
 
 template<>
-void Unpacker::process_type(int32_t &value) {
-  std::clog << "Unpacking value type: " << "int32_t" << '\n';
+void Unpacker::unpack_type(int32_t &value) {
+  if (*data_pointer == int32) {
+    for (auto i = sizeof(int32_t); i > 0; --i) {
+      value += *++data_pointer << 8 * (i - 1);
+    }
+    data_pointer++;
+  } else if (*data_pointer == int16) {
+    for (auto i = sizeof(int16_t); i > 0; --i) {
+      value += *++data_pointer << 8 * (i - 1);
+    }
+    data_pointer++;
+  } else if (*data_pointer == int8) {
+    value = *++data_pointer;
+    data_pointer++;
+  } else {
+    value = *data_pointer++;
+  }
 }
 
 template<>
-void Unpacker::process_type(int64_t &value) {
-  std::clog << "Unpacking value type: " << "int64_t" << '\n';
+void Unpacker::unpack_type(int64_t &value) {
+  if (*data_pointer == int64) {
+    for (auto i = sizeof(int64_t); i > 0; --i) {
+      value += int64_t(*++data_pointer) << 8 * (i - 1);
+    }
+    data_pointer++;
+  } else if (*data_pointer == int32) {
+    for (auto i = sizeof(int32_t); i > 0; --i) {
+      value += int64_t(*++data_pointer) << 8 * (i - 1);
+    }
+    data_pointer++;
+  } else if (*data_pointer == int16) {
+    for (auto i = sizeof(int16_t); i > 0; --i) {
+      value += int64_t(*++data_pointer) << 8 * (i - 1);
+    }
+    data_pointer++;
+  } else if (*data_pointer == int8) {
+    value = int64_t(*++data_pointer);
+    data_pointer++;
+  } else {
+    value = int64_t(*data_pointer++);
+  }
 }
 
 template<>
-void Unpacker::process_type(uint8_t &value) {
-  std::clog << "Unpacking value type: " << "uint8_t" << '\n';
+void Unpacker::unpack_type(uint8_t &value) {
+  if (*data_pointer == uint8) {
+    value = *++data_pointer;
+    data_pointer++;
+  } else {
+    value = *data_pointer++;
+  }
 }
 
 template<>
-void Unpacker::process_type(uint16_t &value) {
-  std::clog << "Unpacking value type: " << "uint16_t" << '\n';
+void Unpacker::unpack_type(uint16_t &value) {
+  if (*data_pointer == uint16) {
+    for (auto i = sizeof(uint16_t); i > 0; --i) {
+      value += *++data_pointer << 8 * (i - 1);
+    }
+    data_pointer++;
+  } else if (*data_pointer == uint8) {
+    value = *++data_pointer;
+    data_pointer++;
+  } else {
+    value = *data_pointer++;
+  }
 }
 
 template<>
-void Unpacker::process_type(uint32_t &value) {
-  std::clog << "Unpacking value type: " << "uint32_t" << '\n';
+void Unpacker::unpack_type(uint32_t &value) {
+  if (*data_pointer == uint32) {
+    for (auto i = sizeof(uint32_t); i > 0; --i) {
+      value += *++data_pointer << 8 * (i - 1);
+    }
+    data_pointer++;
+  } else if (*data_pointer == uint16) {
+    for (auto i = sizeof(uint16_t); i > 0; --i) {
+      value += *++data_pointer << 8 * (i - 1);
+    }
+    data_pointer++;
+  } else if (*data_pointer == uint8) {
+    value = *++data_pointer;
+    data_pointer++;
+  } else {
+    value = *data_pointer++;
+  }
 }
 
 template<>
-void Unpacker::process_type(uint64_t &value) {
-  std::clog << "Unpacking value type: " << "uint64_t" << '\n';
+void Unpacker::unpack_type(uint64_t &value) {
+  if (*data_pointer == uint64) {
+    for (auto i = sizeof(uint64_t); i > 0; --i) {
+      value += uint64_t(*++data_pointer) << 8 * (i - 1);
+    }
+    data_pointer++;
+  } else if (*data_pointer == uint32) {
+    for (auto i = sizeof(uint32_t); i > 0; --i) {
+      value += uint64_t(*++data_pointer) << 8 * (i - 1);
+    }
+    data_pointer++;
+  } else if (*data_pointer == uint16) {
+    for (auto i = sizeof(uint16_t); i > 0; --i) {
+      value += uint64_t(*++data_pointer) << 8 * (i - 1);
+    }
+    data_pointer++;
+  } else if (*data_pointer == uint8) {
+    value = *++data_pointer;
+    data_pointer++;
+  } else {
+    value = *data_pointer++;
+  }
 }
 
 template<>
-void Unpacker::process_type(std::nullptr_t &value) {
-  std::clog << "Unpacking value type: " << "std::nullptr_t" << '\n';
+void Unpacker::unpack_type(std::nullptr_t &/*value*/) {
+  data_pointer++;
 }
 
 template<>
-void Unpacker::process_type(bool &value) {
-  std::clog << "Unpacking value type: " << "boolean" << '\n';
+void Unpacker::unpack_type(bool &value) {
+  value = *data_pointer != 0xc2;
 }
 
 template<>
-void Unpacker::process_type(float &value) {
-  std::clog << "Unpacking value type: " << "float" << '\n';
+void Unpacker::unpack_type(float &value) {
+  if (*data_pointer == float32) {
+    data_pointer++;
+    uint32_t data = 0;
+    for (auto i = sizeof(uint32_t); i > 0; --i) {
+      data += *data_pointer++ << 8 * (i - 1);
+    }
+    auto bits = std::bitset<32>(data);
+    auto mantissa = 1.0f;
+    for (auto i = 23U; i > 0; --i) {
+      if (bits[i - 1]) {
+        mantissa += 1.0f / (1 << (24 - i));
+      }
+    }
+    if (bits[31]) {
+      mantissa *= -1;
+    }
+    uint8_t exponent = 0;
+    for (auto i = 0U; i < 8; ++i) {
+      exponent += bits[i + 23] << i;
+    }
+    exponent -= 127;
+    value = ldexp(mantissa, exponent);
+  } else {
+    if (*data_pointer == int8 || *data_pointer == int16 || *data_pointer == int32 || *data_pointer == int64) {
+      int64_t val = 0;
+      unpack_type(val);
+      value = float(val);
+    } else {
+      uint64_t val = 0;
+      unpack_type(val);
+      value = float(val);
+    }
+  }
 }
 
 template<>
-void Unpacker::process_type(double &value) {
-  std::clog << "Unpacking value type: " << "double" << '\n';
+void Unpacker::unpack_type(double &value) {
+  if (*data_pointer == float64) {
+    data_pointer++;
+    uint64_t data = 0;
+    for (auto i = sizeof(uint64_t); i > 0; --i) {
+      data += uint64_t(*data_pointer++) << 8 * (i - 1);
+    }
+    auto bits = std::bitset<64>(data);
+    auto mantissa = 1.0;
+    for (auto i = 52U; i > 0; --i) {
+      if (bits[i - 1]) {
+        mantissa += 1.0 / (uint64_t(1) << (53 - i));
+      }
+    }
+    if (bits[63]) {
+      mantissa *= -1;
+    }
+    uint16_t exponent = 0;
+    for (auto i = 0U; i < 11; ++i) {
+      exponent += bits[i + 52] << i;
+    }
+    exponent -= 1023;
+    value = ldexp(mantissa, exponent);
+  } else {
+    if (*data_pointer == int8 || *data_pointer == int16 || *data_pointer == int32 || *data_pointer == int64) {
+      int64_t val = 0;
+      unpack_type(val);
+      value = float(val);
+    } else {
+      uint64_t val = 0;
+      unpack_type(val);
+      value = float(val);
+    }
+  }
 }
 
 template<>
-void Unpacker::process_type(std::string &value) {
+void Unpacker::unpack_type(std::string &value) {
   std::clog << "Unpacking value type: " << "string" << '\n';
 }
 
 template<>
-void Unpacker::process_type(std::vector<uint8_t> &value) {
+void Unpacker::unpack_type(std::vector<uint8_t> &value) {
   std::clog << "Unpacking value type: " << "byte array" << '\n';
 }
 
