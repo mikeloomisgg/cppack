@@ -543,13 +543,20 @@ void Unpacker::unpack_type(int8_t &value) {
 template<>
 void Unpacker::unpack_type(int16_t &value) {
   if (*data_pointer == int16) {
-    for (auto i = sizeof(int16_t); i > 0; --i) {
-      value += *++data_pointer << 8 * (i - 1);
+    data_pointer++;
+    std::bitset<16> bits;
+    for (auto i = sizeof(uint16_t); i > 0; --i) {
+      bits |= uint16_t(*data_pointer++) << 8 * (i - 1);
+      if (bits[15]) {
+        value = -1 * (uint16_t((~bits).to_ulong()) + 1);
+      } else {
+        value = uint16_t(bits.to_ulong());
+      }
     }
-    data_pointer++;
   } else if (*data_pointer == int8) {
-    value = *++data_pointer;
-    data_pointer++;
+    int8_t val;
+    unpack_type(val);
+    value = val;
   } else {
     value = *data_pointer++;
   }
@@ -558,18 +565,24 @@ void Unpacker::unpack_type(int16_t &value) {
 template<>
 void Unpacker::unpack_type(int32_t &value) {
   if (*data_pointer == int32) {
-    for (auto i = sizeof(int32_t); i > 0; --i) {
-      value += *++data_pointer << 8 * (i - 1);
-    }
     data_pointer++;
+    std::bitset<32> bits;
+    for (auto i = sizeof(uint32_t); i > 0; --i) {
+      bits |= uint32_t(*data_pointer++) << 8 * (i - 1);
+      if (bits[31]) {
+        value = -1 * ((~bits).to_ulong() + 1);
+      } else {
+        value = bits.to_ulong();
+      }
+    }
   } else if (*data_pointer == int16) {
-    for (auto i = sizeof(int16_t); i > 0; --i) {
-      value += *++data_pointer << 8 * (i - 1);
-    }
-    data_pointer++;
+    int16_t val;
+    unpack_type(val);
+    value = val;
   } else if (*data_pointer == int8) {
-    value = *++data_pointer;
-    data_pointer++;
+    int8_t val;
+    unpack_type(val);
+    value = val;
   } else {
     value = *data_pointer++;
   }
@@ -578,26 +591,30 @@ void Unpacker::unpack_type(int32_t &value) {
 template<>
 void Unpacker::unpack_type(int64_t &value) {
   if (*data_pointer == int64) {
-    for (auto i = sizeof(int64_t); i > 0; --i) {
-      std::clog << value << '\n';
-      value += int64_t(*++data_pointer) << 8 * (i - 1);
-    }
     data_pointer++;
+    std::bitset<64> bits;
+    for (auto i = sizeof(uint64_t); i > 0; --i) {
+      bits |= uint64_t(*data_pointer++) << 8 * (i - 1);
+      if (bits[63]) {
+        value = -1 * ((~bits).to_ullong() + 1);
+      } else {
+        value = bits.to_ullong();
+      }
+    }
   } else if (*data_pointer == int32) {
-    for (auto i = sizeof(int32_t); i > 0; --i) {
-      value += int64_t(*++data_pointer) << 8 * (i - 1);
-    }
-    data_pointer++;
+    int32_t val;
+    unpack_type(val);
+    value = val;
   } else if (*data_pointer == int16) {
-    for (auto i = sizeof(int16_t); i > 0; --i) {
-      value += int64_t(*++data_pointer) << 8 * (i - 1);
-    }
-    data_pointer++;
+    int16_t val;
+    unpack_type(val);
+    value = val;
   } else if (*data_pointer == int8) {
-    value = int64_t(*++data_pointer);
-    data_pointer++;
+    int8_t val;
+    unpack_type(val);
+    value = val;
   } else {
-    value = int64_t(*data_pointer++);
+    value = *data_pointer++;
   }
 }
 

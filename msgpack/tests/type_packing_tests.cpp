@@ -110,7 +110,6 @@ TEST_CASE("Integer type packing") {
 
   for (auto i = -5; i < 5; ++i) {
     int64_t test_num = i * (std::numeric_limits<int64_t>::max() / 5);
-    std::clog << "test num: " << test_num << '\n';
     packer.clear();
     packer.process(test_num);
     int64_t x = 0;
