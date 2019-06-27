@@ -167,7 +167,7 @@ class Packer {
 
 std::bitset<64> twos_complement(int64_t value) {
   if (value < 0) {
-    auto abs_v = abs(value);
+    auto abs_v = llabs(value);
     return ~abs_v + 1;
   } else {
     return {(uint64_t) value};
@@ -593,10 +593,8 @@ void Unpacker::unpack_type(int64_t &value) {
   if (*data_pointer == int64) {
     data_pointer++;
     std::bitset<64> bits;
-    for (auto i = sizeof(uint64_t); i > 0; --i) {
-      bits |= uint64_t(*data_pointer++) << 8 * (i - 1);
-      std::clog << bits.to_string() << '\n';
-      std::clog << bits.to_ullong() << '\n';
+    for (auto i = sizeof(value); i > 0; --i) {
+      bits |= std::bitset<8>(*data_pointer++).to_ullong() << 8 * (i - 1);
     }
     if (bits[63]) {
       value = -1 * ((~bits).to_ullong() + 1);
