@@ -331,7 +331,12 @@ void Packer::pack_type(const float &value) {
         normalized_mantissa_mask |= std::bitset<32>(uint32_t(1 << (i - 1)));
       }
     }
+
     auto ieee754_float32 = (sign_mask | excess_127_exponent_mask | normalized_mantissa_mask).to_ulong();
+    std::clog << "Exponent: " << exponent << '\n';
+    std::clog << "Full Mantissa: " << full_mantissa << '\n';
+    std::clog << "Implied mantissa: " << implied_mantissa << '\n';
+    std::clog << "ieee float: " << ieee754_float32 << '\n';
     serialized_object.emplace_back(float32);
     for (auto i = sizeof(ieee754_float32); i > 0; --i) {
       serialized_object.emplace_back(uint8_t(ieee754_float32 >> (8U * (i - 1)) & 0xff));
