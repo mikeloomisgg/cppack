@@ -39,7 +39,7 @@ TEST_CASE("Integer type packing") {
   auto unpacker = msgpack::Unpacker{};
 
   for (auto i = 0U; i < 10; ++i) {
-    uint8_t test_num = i * std::numeric_limits<uint8_t>::max() / 10;
+    uint8_t test_num = i * (std::numeric_limits<uint8_t>::max() / 10);
     packer.clear();
     packer.process(test_num);
     uint8_t x = 0U;
@@ -49,7 +49,7 @@ TEST_CASE("Integer type packing") {
   }
 
   for (auto i = 0U; i < 10; ++i) {
-    uint16_t test_num = i * std::numeric_limits<uint16_t>::max() / 10;
+    uint16_t test_num = i * (std::numeric_limits<uint16_t>::max() / 10);
     packer.clear();
     packer.process(test_num);
     uint16_t x = 0U;
@@ -59,7 +59,7 @@ TEST_CASE("Integer type packing") {
   }
 
   for (auto i = 0U; i < 10; ++i) {
-    uint32_t test_num = i * std::numeric_limits<uint32_t>::max() / 10;
+    uint32_t test_num = i * (std::numeric_limits<uint32_t>::max() / 10);
     packer.clear();
     packer.process(test_num);
     uint32_t x = 0U;
@@ -69,7 +69,7 @@ TEST_CASE("Integer type packing") {
   }
 
   for (auto i = 0U; i < 10; ++i) {
-    uint64_t test_num = i * std::numeric_limits<uint64_t>::max() / 10;
+    uint64_t test_num = i * (std::numeric_limits<uint64_t>::max() / 10);
     packer.clear();
     packer.process(test_num);
     uint64_t x = 0U;
@@ -79,7 +79,7 @@ TEST_CASE("Integer type packing") {
   }
 
   for (auto i = -5; i < 5; ++i) {
-    int8_t test_num = i * std::numeric_limits<int8_t>::max() / 5;
+    int8_t test_num = i * (std::numeric_limits<int8_t>::max() / 5);
     packer.clear();
     packer.process(test_num);
     int8_t x = 0;
@@ -89,7 +89,7 @@ TEST_CASE("Integer type packing") {
   }
 
   for (auto i = -5; i < 5; ++i) {
-    int16_t test_num = i * std::numeric_limits<int16_t>::max() / 5;
+    int16_t test_num = i * (std::numeric_limits<int16_t>::max() / 5);
     packer.clear();
     packer.process(test_num);
     int16_t x = 0;
@@ -99,7 +99,7 @@ TEST_CASE("Integer type packing") {
   }
 
   for (auto i = -5; i < 5; ++i) {
-    int32_t test_num = i * std::numeric_limits<int32_t>::max() / 5;
+    int32_t test_num = i * (std::numeric_limits<int32_t>::max() / 5);
     packer.clear();
     packer.process(test_num);
     int32_t x = 0;
@@ -109,7 +109,8 @@ TEST_CASE("Integer type packing") {
   }
 
   for (auto i = -5; i < 5; ++i) {
-    int64_t test_num = i * std::numeric_limits<int64_t>::max() / 5;
+    int64_t test_num = i * (std::numeric_limits<int64_t>::max() / 5);
+    std::clog << "test num: " << test_num << '\n';
     packer.clear();
     packer.process(test_num);
     int64_t x = 0;

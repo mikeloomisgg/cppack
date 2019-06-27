@@ -579,6 +579,7 @@ template<>
 void Unpacker::unpack_type(int64_t &value) {
   if (*data_pointer == int64) {
     for (auto i = sizeof(int64_t); i > 0; --i) {
+      std::clog << value << '\n';
       value += int64_t(*++data_pointer) << 8 * (i - 1);
     }
     data_pointer++;
