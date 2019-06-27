@@ -203,7 +203,7 @@ std::bitset<8> twos_complement(int8_t value) {
 
 template<>
 void Packer::pack_type(const int8_t &value) {
-  if (value > 127 || value < -32) {
+  if (value > 31 || value < -32) {
     serialized_object.emplace_back(int8);
   }
   serialized_object.emplace_back(uint8_t(twos_complement(value).to_ulong()));
@@ -310,8 +310,8 @@ void Packer::pack_type(const bool &value) {
 
 template<>
 void Packer::pack_type(const float &value) {
-  float integral_part;
-  float fractional_remainder = modf(value, &integral_part);
+  double integral_part;
+  auto fractional_remainder = float(modf(value, &integral_part));
 
   if (fractional_remainder == 0) { // Just pack as int
     pack_type(int64_t(integral_part));
@@ -326,7 +326,7 @@ void Packer::pack_type(const float &value) {
     for (auto i = 23U; i > 0; --i) {
       integral_part = 0;
       implied_mantissa *= 2;
-      implied_mantissa = modf(implied_mantissa, &integral_part);
+      implied_mantissa = float(modf(implied_mantissa, &integral_part));
       if (uint8_t(integral_part) == 1) {
         normalized_mantissa_mask |= std::bitset<32>(uint32_t(1 << (i - 1)));
       }
@@ -450,7 +450,7 @@ class Unpacker {
 
   template<class T>
   void unpack_array(T &array) {
-    using ValueType = T::value_type;
+    using ValueType = typename T::value_type;
     if (*data_pointer == array32) {
       data_pointer++;
       std::size_t array_size = 0;
@@ -487,8 +487,8 @@ class Unpacker {
 
   template<class T>
   void unpack_map(T &map) {
-    using KeyType = T::key_type;
-    using MappedType = T::mapped_type;
+    using KeyType = typename T::key_type;
+    using MappedType = typename T::mapped_type;
     if (*data_pointer == map32) {
       data_pointer++;
       std::size_t map_size = 0;
