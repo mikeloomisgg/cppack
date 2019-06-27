@@ -547,11 +547,11 @@ void Unpacker::unpack_type(int16_t &value) {
     std::bitset<16> bits;
     for (auto i = sizeof(uint16_t); i > 0; --i) {
       bits |= uint16_t(*data_pointer++) << 8 * (i - 1);
-      if (bits[15]) {
-        value = -1 * (uint16_t((~bits).to_ulong()) + 1);
-      } else {
-        value = uint16_t(bits.to_ulong());
-      }
+    }
+    if (bits[15]) {
+      value = -1 * (uint16_t((~bits).to_ulong()) + 1);
+    } else {
+      value = uint16_t(bits.to_ulong());
     }
   } else if (*data_pointer == int8) {
     int8_t val;
@@ -569,11 +569,11 @@ void Unpacker::unpack_type(int32_t &value) {
     std::bitset<32> bits;
     for (auto i = sizeof(uint32_t); i > 0; --i) {
       bits |= uint32_t(*data_pointer++) << 8 * (i - 1);
-      if (bits[31]) {
-        value = -1 * ((~bits).to_ulong() + 1);
-      } else {
-        value = bits.to_ulong();
-      }
+    }
+    if (bits[31]) {
+      value = -1 * ((~bits).to_ulong() + 1);
+    } else {
+      value = bits.to_ulong();
     }
   } else if (*data_pointer == int16) {
     int16_t val;
@@ -595,11 +595,13 @@ void Unpacker::unpack_type(int64_t &value) {
     std::bitset<64> bits;
     for (auto i = sizeof(uint64_t); i > 0; --i) {
       bits |= uint64_t(*data_pointer++) << 8 * (i - 1);
-      if (bits[63]) {
-        value = -1 * ((~bits).to_ullong() + 1);
-      } else {
-        value = bits.to_ullong();
-      }
+      std::clog << bits.to_string() << '\n';
+      std::clog << bits.to_ullong() << '\n';
+    }
+    if (bits[63]) {
+      value = -1 * ((~bits).to_ullong() + 1);
+    } else {
+      value = bits.to_ullong();
     }
   } else if (*data_pointer == int32) {
     int32_t val;
