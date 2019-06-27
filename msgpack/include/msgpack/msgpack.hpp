@@ -339,6 +339,7 @@ void Packer::pack_type(const float &value) {
     std::clog << "ieee float: " << ieee754_float32 << '\n';
     serialized_object.emplace_back(float32);
     for (auto i = sizeof(ieee754_float32); i > 0; --i) {
+      std::clog << std::bitset<8>(uint8_t(ieee754_float32 >> (8U * (i - 1)) & 0xff)).to_string() << ' ';
       serialized_object.emplace_back(uint8_t(ieee754_float32 >> (8U * (i - 1)) & 0xff));
     }
   }
