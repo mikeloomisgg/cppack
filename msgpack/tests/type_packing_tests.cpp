@@ -6,18 +6,6 @@
 
 #include <msgpack/msgpack.hpp>
 
-struct Example {
-  std::map<int, int> x;
-//  uint8_t y;
-//  std::string z;
-//  std::vector<std::string> array;
-
-  template<class Packager>
-  void pack(Packager &packager) {
-    packager.process(x);
-  }
-};
-
 TEST_CASE("Nil type packing") {
   auto null_obj = std::nullptr_t{};
   auto packer = msgpack::Packer{};
@@ -26,14 +14,24 @@ TEST_CASE("Nil type packing") {
 }
 
 TEST_CASE("Boolean type packing") {
-  auto bool_obj = false;
   auto packer = msgpack::Packer{};
+  auto unpacker = msgpack::Unpacker{};
+  auto bool_obj = false;
   packer.process(bool_obj);
+  unpacker.set_data(packer.vector().data());
+  bool_obj = true;
+  unpacker.process(bool_obj);
   REQUIRE(packer.vector() == std::vector<uint8_t>{0xc2});
+  REQUIRE(!bool_obj);
+
   bool_obj = true;
   packer.clear();
   packer.process(bool_obj);
+  unpacker.set_data(packer.vector().data());
+  bool_obj = false;
+  unpacker.process(bool_obj);
   REQUIRE(packer.vector() == std::vector<uint8_t>{0xc3});
+  REQUIRE(bool_obj);
 }
 
 TEST_CASE("Integer type packing") {
@@ -147,32 +145,76 @@ TEST_CASE("Float type packing") {
 }
 
 TEST_CASE("String type packing") {
-  auto str1 = std::string("test");
   auto packer = msgpack::Packer{};
+  auto unpacker = msgpack::Unpacker{};
+
+  auto str1 = std::string("test");
   packer.process(str1);
+  str1 = "";
+  unpacker.set_data(packer.vector().data());
+  unpacker.process(str1);
   REQUIRE(packer.vector() == std::vector<uint8_t>{0b10100000 | 4, 't', 'e', 's', 't'});
+  REQUIRE(str1 == "test");
 }
 
 TEST_CASE("Byte array type packing") {
-  auto vec1 = std::vector<uint8_t>{1, 2, 3, 4};
   auto packer = msgpack::Packer{};
+  auto unpacker = msgpack::Unpacker{};
+
+  auto vec1 = std::vector<uint8_t>{1, 2, 3, 4};
   packer.process(vec1);
+  vec1.clear();
+  unpacker.set_data(packer.vector().data());
+  unpacker.process(vec1);
   REQUIRE(packer.vector() == std::vector<uint8_t>{0xc4, 4, 1, 2, 3, 4});
+  REQUIRE(vec1 == std::vector<uint8_t>{1, 2, 3, 4});
 }
 
 TEST_CASE("Array type packing") {
-  auto list1 = std::list<std::string>{"one", "two", "three"};
   auto packer = msgpack::Packer{};
+  auto unpacker = msgpack::Unpacker{};
+
+  auto list1 = std::list<std::string>{"one", "two", "three"};
   packer.process(list1);
+  list1.clear();
+  unpacker.set_data(packer.vector().data());
+  unpacker.process(list1);
   REQUIRE(packer.vector() == std::vector<uint8_t>{0b10010000 | 3, 0b10100000 | 3, 'o', 'n', 'e',
                                                   0b10100000 | 3, 't', 'w', 'o',
                                                   0b10100000 | 5, 't', 'h', 'r', 'e', 'e'});
+  REQUIRE(list1 == std::list<std::string>{"one", "two", "three"});
 }
 
 TEST_CASE("Map type packing") {
-  auto map1 = std::map<uint8_t, std::string>{std::make_pair(0, "zero"), std::make_pair(1, "one")};
   auto packer = msgpack::Packer{};
+  auto unpacker = msgpack::Unpacker{};
+
+  auto map1 = std::map<uint8_t, std::string>{std::make_pair(0, "zero"), std::make_pair(1, "one")};
   packer.process(map1);
+  map1.clear();
+  unpacker.set_data(packer.vector().data());
+  unpacker.process(map1);
   REQUIRE(packer.vector() == std::vector<uint8_t>{0b10000000 | 2, 0, 0b10100000 | 4, 'z', 'e', 'r', 'o',
                                                   1, 0b10100000 | 3, 'o', 'n', 'e'});
+  REQUIRE(map1 == std::map<uint8_t, std::string>{std::make_pair(0, "zero"), std::make_pair(1, "one")});
+}
+
+struct WebsiteExample {
+  std::map<std::string, bool> map;
+
+  template<class Packager>
+  void pack(Packager &packager) {
+    packager.process(map);
+  }
+};
+
+TEST_CASE("Website example") {
+  WebsiteExample example{{{"compact", true}, {"schema", false}}};
+  auto data = msgpack::pack(example);
+
+  REQUIRE(data.size() == 18);
+  REQUIRE(data == std::vector<uint8_t>{0x82, 0xa7, 0x63, 0x6f, 0x6d, 0x70, 0x61, 0x63, 0x74, 0xc3, 0xa6, 0x73, 0x63,
+                                       0x68, 0x65, 0x6d, 0x61, 0xc2});
+
+  REQUIRE(example.map == msgpack::unpack<WebsiteExample>(data.data()).map);
 }

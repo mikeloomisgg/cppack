@@ -450,12 +450,83 @@ class Unpacker {
 
   template<class T>
   void unpack_array(T &array) {
-    std::clog << "Unpacking value type: " << "object array" << '\n';
+    using ValueType = T::value_type;
+    if (*data_pointer == array32) {
+      data_pointer++;
+      std::size_t array_size = 0;
+      for (auto i = sizeof(uint32_t); i > 0; --i) {
+        array_size += uint32_t(*data_pointer++) << 8 * (i - 1);
+      }
+      std::vector<uint32_t> x{};
+      for (auto i = 0U; i < array_size; ++i) {
+        ValueType val{};
+        unpack_type(val);
+        array.emplace_back(val);
+      }
+    } else if (*data_pointer == array16) {
+      data_pointer++;
+      std::size_t array_size = 0;
+      for (auto i = sizeof(uint16_t); i > 0; --i) {
+        array_size += uint16_t(*data_pointer++) << 8 * (i - 1);
+      }
+      for (auto i = 0U; i < array_size; ++i) {
+        ValueType val{};
+        unpack_type(val);
+        array.emplace_back(val);
+      }
+    } else {
+      std::size_t array_size = *data_pointer & 0b00001111;
+      data_pointer++;
+      for (auto i = 0U; i < array_size; ++i) {
+        ValueType val{};
+        unpack_type(val);
+        array.emplace_back(val);
+      }
+    }
   }
 
   template<class T>
   void unpack_map(T &map) {
-    std::clog << "Unpacking value type: " << "map" << '\n';
+    using KeyType = T::key_type;
+    using MappedType = T::mapped_type;
+    if (*data_pointer == map32) {
+      data_pointer++;
+      std::size_t map_size = 0;
+      for (auto i = sizeof(uint32_t); i > 0; --i) {
+        map_size += uint32_t(*data_pointer++) << 8 * (i - 1);
+      }
+      std::vector<uint32_t> x{};
+      for (auto i = 0U; i < map_size; ++i) {
+        KeyType key{};
+        MappedType value{};
+        unpack_type(key);
+        unpack_type(value);
+        map.insert_or_assign(key, value);
+      }
+    } else if (*data_pointer == map16) {
+      data_pointer++;
+      std::size_t map_size = 0;
+      for (auto i = sizeof(uint16_t); i > 0; --i) {
+        map_size += uint16_t(*data_pointer++) << 8 * (i - 1);
+      }
+      for (auto i = 0U; i < map_size; ++i) {
+        KeyType key{};
+        MappedType value{};
+        unpack_type(key);
+        unpack_type(value);
+        map.insert_or_assign(key, value);
+      }
+    } else {
+      std::size_t map_size = *data_pointer & 0b00001111;
+      data_pointer++;
+      for (auto i = 0U; i < map_size; ++i) {
+        KeyType key{};
+        MappedType value{};
+        unpack_type(key);
+        unpack_type(value);
+        map.insert_or_assign(key, value);
+      }
+    }
   }
 };
 
@@ -606,7 +677,7 @@ void Unpacker::unpack_type(std::nullptr_t &/*value*/) {
 
 template<>
 void Unpacker::unpack_type(bool &value) {
-  value = *data_pointer != 0xc2;
+  value = *data_pointer++ != 0xc2;
 }
 
 template<>
@@ -685,12 +756,59 @@ void Unpacker::unpack_type(double &value) {
 
 template<>
 void Unpacker::unpack_type(std::string &value) {
-  std::clog << "Unpacking value type: " << "string" << '\n';
+  if (*data_pointer == str32) {
+    data_pointer++;
+    std::size_t str_size = 0;
+    for (auto i = sizeof(uint32_t); i > 0; --i) {
+      str_size += uint32_t(*data_pointer++) << 8 * (i - 1);
+    }
+    value = std::string{data_pointer, data_pointer + str_size};
+  } else if (*data_pointer == str16) {
+    data_pointer++;
+    std::size_t str_size = 0;
+    for (auto i = sizeof(uint16_t); i > 0; --i) {
+      str_size += uint16_t(*data_pointer++) << 8 * (i - 1);
+    }
+    value = std::string{data_pointer, data_pointer + str_size};
+  } else if (*data_pointer == str8) {
+    data_pointer++;
+    std::size_t str_size = 0;
+    for (auto i = sizeof(uint8_t); i > 0; --i) {
+      str_size += uint8_t(*data_pointer++) << 8 * (i - 1);
+    }
+    value = std::string{data_pointer, data_pointer + str_size};
+  } else {
+    std::size_t str_size = *data_pointer & 0b00011111;
+    data_pointer++;
+    value = std::string{data_pointer, data_pointer + str_size};
+    data_pointer += str_size;
+  }
 }
 
 template<>
 void Unpacker::unpack_type(std::vector<uint8_t> &value) {
-  std::clog << "Unpacking value type: " << "byte array" << '\n';
+  if (*data_pointer == bin32) {
+    data_pointer++;
+    std::size_t bin_size = 0;
+    for (auto i = sizeof(uint32_t); i > 0; --i) {
+      bin_size += uint32_t(*data_pointer++) << 8 * (i - 1);
+    }
+    value = std::vector<uint8_t>{data_pointer, data_pointer + bin_size};
+  } else if (*data_pointer == bin16) {
+    data_pointer++;
+    std::size_t bin_size = 0;
+    for (auto i = sizeof(uint16_t); i > 0; --i) {
+      bin_size += uint16_t(*data_pointer++) << 8 * (i - 1);
+    }
+    value = std::vector<uint8_t>{data_pointer, data_pointer + bin_size};
+  } else {
+    data_pointer++;
+    std::size_t bin_size = 0;
+    for (auto i = sizeof(uint8_t); i > 0; --i) {
+      bin_size += uint8_t(*data_pointer++) << 8 * (i - 1);
+    }
+    value = std::vector<uint8_t>{data_pointer, data_pointer + bin_size};
+  }
 }
 
 template<class PackableObject>
