@@ -92,9 +92,15 @@ struct is_map<std::map<T, Alloc> > {
 
 class Packer {
  public:
+
+  template<class ... Types>
+  void operator()(Types &... args) {
+    (pack_type(std::forward<Types &>(args)), ...);
+  }
+
   template<class ... Types>
   void process(Types &... args) {
-    (pack_type(args), ...);
+    (pack_type(std::forward<Types &>(args)), ...);
   }
 
   const std::vector<uint8_t> &vector() const {
@@ -427,8 +433,13 @@ class Unpacker {
   explicit Unpacker(const uint8_t *data_start) : data_pointer(data_start) {};
 
   template<class ... Types>
+  void operator()(Types &... args) {
+    (unpack_type(std::forward<Types &>(args)), ...);
+  }
+
+  template<class ... Types>
   void process(Types &... args) {
-    (unpack_type(args), ...);
+    (unpack_type(std::forward<Types &>(args)), ...);
   }
 
   void set_data(const uint8_t *pointer) {
@@ -833,7 +844,7 @@ void Unpacker::unpack_type(std::vector<uint8_t> &value) {
 template<class PackableObject>
 std::vector<uint8_t> pack(PackableObject &&obj) {
   auto packer = Packer{};
-  obj.pack(packer);
+  obj.msgpack(packer);
   return packer.vector();
 }
 
@@ -841,7 +852,7 @@ template<class UnpackableObject>
 UnpackableObject unpack(uint8_t *data_start) {
   auto obj = UnpackableObject{};
   auto unpacker = Unpacker(data_start);
-  obj.pack(unpacker);
+  obj.msgpack(unpacker);
   return obj;
 }
 }
