@@ -33,11 +33,17 @@ struct Person {
 int main() {
     auto person = Person{"John", 22, {"Ripper", "Silverhand"}};
 
-    auto data = msgpack::pack(person);
+    auto data = msgpack::pack(person); // Pack your object
+    auto john = msgpack::unpack<Person>(data.data()); // Unpack it
 }
 ```
 
+[More Examples](msgpack/tests/examples.cpp)
+
+
 ### Roadmap
+- Error handling
+  - Currently, the unpacker isn't checking bounds as it deserializes data. Corrupted data would cause undefined behavior, so that will be fixed soon.
 - Support for extension types
   - The msgpack spec allows for additional types to be enumerated as Extensions. If reasonable use cases come about for this feature then it may be added.
 - Name/value pairs
