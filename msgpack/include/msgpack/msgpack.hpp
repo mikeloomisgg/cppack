@@ -92,9 +92,15 @@ struct is_map<std::map<T, Alloc> > {
 
 class Packer {
  public:
+
+  template<class ... Types>
+  void operator()(Types &... args) {
+    (pack_type(std::forward<Types &>(args)), ...);
+  }
+
   template<class ... Types>
   void process(Types &... args) {
-    (pack_type(args), ...);
+    (pack_type(std::forward<Types &>(args)), ...);
   }
 
   const std::vector<uint8_t> &vector() const {
@@ -163,45 +169,46 @@ class Packer {
       pack_type(std::get<1>(elem));
     }
   }
+
+  std::bitset<64> twos_complement(int64_t value) {
+    if (value < 0) {
+      auto abs_v = llabs(value);
+      return ~abs_v + 1;
+    } else {
+      return {(uint64_t) value};
+    }
+  }
+
+  std::bitset<32> twos_complement(int32_t value) {
+    if (value < 0) {
+      auto abs_v = abs(value);
+      return ~abs_v + 1;
+    } else {
+      return {(uint32_t) value};
+    }
+  }
+
+  std::bitset<16> twos_complement(int16_t value) {
+    if (value < 0) {
+      auto abs_v = abs(value);
+      return ~abs_v + 1;
+    } else {
+      return {(uint16_t) value};
+    }
+  }
+
+  std::bitset<8> twos_complement(int8_t value) {
+    if (value < 0) {
+      auto abs_v = abs(value);
+      return ~abs_v + 1;
+    } else {
+      return {(uint8_t) value};
+    }
+  }
 };
 
-std::bitset<64> twos_complement(int64_t value) {
-  if (value < 0) {
-    auto abs_v = llabs(value);
-    return ~abs_v + 1;
-  } else {
-    return {(uint64_t) value};
-  }
-}
-
-std::bitset<32> twos_complement(int32_t value) {
-  if (value < 0) {
-    auto abs_v = abs(value);
-    return ~abs_v + 1;
-  } else {
-    return {(uint32_t) value};
-  }
-}
-
-std::bitset<16> twos_complement(int16_t value) {
-  if (value < 0) {
-    auto abs_v = abs(value);
-    return ~abs_v + 1;
-  } else {
-    return {(uint16_t) value};
-  }
-}
-
-std::bitset<8> twos_complement(int8_t value) {
-  if (value < 0) {
-    auto abs_v = abs(value);
-    return ~abs_v + 1;
-  } else {
-    return {(uint8_t) value};
-  }
-}
-
 template<>
+inline
 void Packer::pack_type(const int8_t &value) {
   if (value > 31 || value < -32) {
     serialized_object.emplace_back(int8);
@@ -210,6 +217,7 @@ void Packer::pack_type(const int8_t &value) {
 }
 
 template<>
+inline
 void Packer::pack_type(const int16_t &value) {
   if (abs(value) < abs(std::numeric_limits<int8_t>::min())) {
     pack_type(int8_t(value));
@@ -223,6 +231,7 @@ void Packer::pack_type(const int16_t &value) {
 }
 
 template<>
+inline
 void Packer::pack_type(const int32_t &value) {
   if (abs(value) < abs(std::numeric_limits<int16_t>::min())) {
     pack_type(int16_t(value));
@@ -236,6 +245,7 @@ void Packer::pack_type(const int32_t &value) {
 }
 
 template<>
+inline
 void Packer::pack_type(const int64_t &value) {
   if (llabs(value) < llabs(std::numeric_limits<int32_t>::min()) && value != std::numeric_limits<int64_t>::min()) {
     pack_type(int32_t(value));
@@ -249,6 +259,7 @@ void Packer::pack_type(const int64_t &value) {
 }
 
 template<>
+inline
 void Packer::pack_type(const uint8_t &value) {
   if (value <= 0x7f) {
     serialized_object.emplace_back(value);
@@ -259,6 +270,7 @@ void Packer::pack_type(const uint8_t &value) {
 }
 
 template<>
+inline
 void Packer::pack_type(const uint16_t &value) {
   if (value > std::numeric_limits<uint8_t>::max()) {
     serialized_object.emplace_back(uint16);
@@ -271,6 +283,7 @@ void Packer::pack_type(const uint16_t &value) {
 }
 
 template<>
+inline
 void Packer::pack_type(const uint32_t &value) {
   if (value > std::numeric_limits<uint16_t>::max()) {
     serialized_object.emplace_back(uint32);
@@ -283,6 +296,7 @@ void Packer::pack_type(const uint32_t &value) {
 }
 
 template<>
+inline
 void Packer::pack_type(const uint64_t &value) {
   if (value > std::numeric_limits<uint32_t>::max()) {
     serialized_object.emplace_back(uint64);
@@ -295,11 +309,13 @@ void Packer::pack_type(const uint64_t &value) {
 }
 
 template<>
+inline
 void Packer::pack_type(const std::nullptr_t &/*value*/) {
   serialized_object.emplace_back(nil);
 }
 
 template<>
+inline
 void Packer::pack_type(const bool &value) {
   if (value) {
     serialized_object.emplace_back(true_bool);
@@ -309,6 +325,7 @@ void Packer::pack_type(const bool &value) {
 }
 
 template<>
+inline
 void Packer::pack_type(const float &value) {
   double integral_part;
   auto fractional_remainder = float(modf(value, &integral_part));
@@ -341,6 +358,7 @@ void Packer::pack_type(const float &value) {
 }
 
 template<>
+inline
 void Packer::pack_type(const double &value) {
   double integral_part;
   double fractional_remainder = modf(value, &integral_part);
@@ -373,6 +391,7 @@ void Packer::pack_type(const double &value) {
 }
 
 template<>
+inline
 void Packer::pack_type(const std::string &value) {
   if (value.size() < 32) {
     serialized_object.emplace_back(uint8_t(value.size()) | 0b10100000);
@@ -398,6 +417,7 @@ void Packer::pack_type(const std::string &value) {
 }
 
 template<>
+inline
 void Packer::pack_type(const std::vector<uint8_t> &value) {
   if (value.size() < std::numeric_limits<uint8_t>::max()) {
     serialized_object.emplace_back(bin8);
@@ -427,8 +447,13 @@ class Unpacker {
   explicit Unpacker(const uint8_t *data_start) : data_pointer(data_start) {};
 
   template<class ... Types>
+  void operator()(Types &... args) {
+    (unpack_type(std::forward<Types &>(args)), ...);
+  }
+
+  template<class ... Types>
   void process(Types &... args) {
-    (unpack_type(args), ...);
+    (unpack_type(std::forward<Types &>(args)), ...);
   }
 
   void set_data(const uint8_t *pointer) {
@@ -532,6 +557,7 @@ class Unpacker {
 };
 
 template<>
+inline
 void Unpacker::unpack_type(int8_t &value) {
   if (*data_pointer == int8) {
     value = *++data_pointer;
@@ -542,6 +568,7 @@ void Unpacker::unpack_type(int8_t &value) {
 }
 
 template<>
+inline
 void Unpacker::unpack_type(int16_t &value) {
   if (*data_pointer == int16) {
     data_pointer++;
@@ -564,6 +591,7 @@ void Unpacker::unpack_type(int16_t &value) {
 }
 
 template<>
+inline
 void Unpacker::unpack_type(int32_t &value) {
   if (*data_pointer == int32) {
     data_pointer++;
@@ -590,6 +618,7 @@ void Unpacker::unpack_type(int32_t &value) {
 }
 
 template<>
+inline
 void Unpacker::unpack_type(int64_t &value) {
   if (*data_pointer == int64) {
     data_pointer++;
@@ -620,6 +649,7 @@ void Unpacker::unpack_type(int64_t &value) {
 }
 
 template<>
+inline
 void Unpacker::unpack_type(uint8_t &value) {
   if (*data_pointer == uint8) {
     value = *++data_pointer;
@@ -630,6 +660,7 @@ void Unpacker::unpack_type(uint8_t &value) {
 }
 
 template<>
+inline
 void Unpacker::unpack_type(uint16_t &value) {
   if (*data_pointer == uint16) {
     for (auto i = sizeof(uint16_t); i > 0; --i) {
@@ -645,6 +676,7 @@ void Unpacker::unpack_type(uint16_t &value) {
 }
 
 template<>
+inline
 void Unpacker::unpack_type(uint32_t &value) {
   if (*data_pointer == uint32) {
     for (auto i = sizeof(uint32_t); i > 0; --i) {
@@ -665,6 +697,7 @@ void Unpacker::unpack_type(uint32_t &value) {
 }
 
 template<>
+inline
 void Unpacker::unpack_type(uint64_t &value) {
   if (*data_pointer == uint64) {
     for (auto i = sizeof(uint64_t); i > 0; --i) {
@@ -690,16 +723,19 @@ void Unpacker::unpack_type(uint64_t &value) {
 }
 
 template<>
+inline
 void Unpacker::unpack_type(std::nullptr_t &/*value*/) {
   data_pointer++;
 }
 
 template<>
+inline
 void Unpacker::unpack_type(bool &value) {
   value = *data_pointer++ != 0xc2;
 }
 
 template<>
+inline
 void Unpacker::unpack_type(float &value) {
   if (*data_pointer == float32) {
     data_pointer++;
@@ -737,6 +773,7 @@ void Unpacker::unpack_type(float &value) {
 }
 
 template<>
+inline
 void Unpacker::unpack_type(double &value) {
   if (*data_pointer == float64) {
     data_pointer++;
@@ -774,6 +811,7 @@ void Unpacker::unpack_type(double &value) {
 }
 
 template<>
+inline
 void Unpacker::unpack_type(std::string &value) {
   if (*data_pointer == str32) {
     data_pointer++;
@@ -805,6 +843,7 @@ void Unpacker::unpack_type(std::string &value) {
 }
 
 template<>
+inline
 void Unpacker::unpack_type(std::vector<uint8_t> &value) {
   if (*data_pointer == bin32) {
     data_pointer++;
@@ -833,7 +872,7 @@ void Unpacker::unpack_type(std::vector<uint8_t> &value) {
 template<class PackableObject>
 std::vector<uint8_t> pack(PackableObject &&obj) {
   auto packer = Packer{};
-  obj.pack(packer);
+  obj.msgpack(packer);
   return packer.vector();
 }
 
@@ -841,7 +880,7 @@ template<class UnpackableObject>
 UnpackableObject unpack(uint8_t *data_start) {
   auto obj = UnpackableObject{};
   auto unpacker = Unpacker(data_start);
-  obj.pack(unpacker);
+  obj.msgpack(unpacker);
   return obj;
 }
 }

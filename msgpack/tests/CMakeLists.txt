@@ -4,7 +4,8 @@ find_package(Catch2 REQUIRED)
 
 add_executable(Msgpack_tests
                main.cpp
-               type_packing_tests.cpp)
+               type_packing_tests.cpp
+               examples.cpp)
 
 if (MSVC)
     target_compile_options(Msgpack_tests PRIVATE /WX /Zc:__cplusplus)
