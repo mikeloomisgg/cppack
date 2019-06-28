@@ -37,6 +37,9 @@ int main() {
 }
 ```
 
+[More Examples](msgpack/tests/examples.cpp)
+
+
 ### Roadmap
 - Support for extension types
   - The msgpack spec allows for additional types to be enumerated as Extensions. If reasonable use cases come about for this feature then it may be added.
