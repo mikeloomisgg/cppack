@@ -25,3 +25,14 @@ TEST_CASE("Website example") {
 
   REQUIRE(example.map == msgpack::unpack<Example>(data).map);
 }
+
+TEST_CASE("Unpack with error handling") {
+  Example example{{{"compact", true}, {"schema", false}}};
+  auto data = std::vector<uint8_t>{0x82, 0xa7, 0x63, 0x6f, 0x6d, 0x70, 0x61, 0x63, 0x74, 0xc3, 0xa6, 0x73, 0x63};
+  std::error_code ec{};
+  auto unpacked_object = msgpack::unpack<Example>(data, ec);
+  if (ec && ec == msgpack::UnpackerError::OutOfRange)
+    REQUIRE(true);
+  else
+    REQUIRE(false);
+}

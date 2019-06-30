@@ -14,6 +14,40 @@
 #include <bitset>
 
 namespace msgpack {
+enum class UnpackerError {
+  OutOfRange = 1
+};
+
+struct UnpackerErrCategory : public std::error_category {
+ public:
+  const char *name() const noexcept override {
+    return "unpacker";
+  };
+
+  std::string message(int ev) const override {
+    switch (static_cast<msgpack::UnpackerError>(ev)) {
+      case msgpack::UnpackerError::OutOfRange:
+        return "tried to dereference out of range during deserialization";
+      default:
+        return "(unrecognized error)";
+    }
+  };
+};
+
+const UnpackerErrCategory theUnpackerErrCategory{};
+
+inline
+std::error_code make_error_code(msgpack::UnpackerError e) {
+  return {static_cast<int>(e), theUnpackerErrCategory};
+}
+}
+
+namespace std {
+template<>
+struct is_error_code_enum<msgpack::UnpackerError> : public true_type {};
+}
+
+namespace msgpack {
 
 enum FormatConstants : uint8_t {
   // positive fixint = 0x00 - 0x7f
@@ -121,7 +155,7 @@ class Packer {
     } else if constexpr (is_container<T>::value) {
       pack_array(value);
     } else {
-      std::cerr << "Unknown type\n";
+      static_assert(false, "Unknown types cannot be serialized from.");
     }
   }
 
@@ -462,19 +496,24 @@ class Unpacker {
     data_end = data_pointer + size;
   }
 
+  std::error_code ec{};
+
  private:
   const uint8_t *data_pointer;
   const uint8_t *data_end;
 
-  uint8_t safe_data() const {
+  uint8_t safe_data() {
     if (data_pointer < data_end)
       return *data_pointer;
+    ec = UnpackerError::OutOfRange;
     return 0;
   }
 
   void safe_increment(int64_t bytes = 1) {
-    if (data_end - data_pointer >= bytes) {
+    if (data_end - data_pointer >= 0) {
       data_pointer += bytes;
+    } else {
+      ec = UnpackerError::OutOfRange;
     }
   }
 
@@ -884,6 +923,8 @@ void Unpacker::unpack_type(std::string &value) {
   if (data_pointer + str_size <= data_end) {
     value = std::string{data_pointer, data_pointer + str_size};
     safe_increment(str_size);
+  } else {
+    ec = UnpackerError::OutOfRange;
   }
 }
 
@@ -913,32 +954,42 @@ void Unpacker::unpack_type(std::vector<uint8_t> &value) {
   if (data_pointer + bin_size <= data_end) {
     value = std::vector<uint8_t>{data_pointer, data_pointer + bin_size};
     safe_increment(bin_size);
+  } else {
+    ec = UnpackerError::OutOfRange;
   }
 }
 
 template<class PackableObject>
-std::vector<uint8_t> pack(PackableObject &&obj) {
+std::vector<uint8_t> pack(PackableObject &obj) {
   auto packer = Packer{};
   obj.msgpack(packer);
   return packer.vector();
 }
 
 template<class UnpackableObject>
-UnpackableObject unpack(const uint8_t *data_start, const std::size_t size) {
+UnpackableObject unpack(const uint8_t *data_start, const std::size_t size, std::error_code &ec) {
   auto obj = UnpackableObject{};
   auto unpacker = Unpacker(data_start, size);
   obj.msgpack(unpacker);
+  ec = unpacker.ec;
   return obj;
 }
 
 template<class UnpackableObject>
-UnpackableObject unpack(const std::vector<uint8_t> &data) {
-  return unpack<UnpackableObject>(data.data(), data.size());
+UnpackableObject unpack(const uint8_t *data_start, const std::size_t size) {
+  std::error_code ec{};
+  return unpack<UnpackableObject>(data_start, size, ec);
 }
 
 template<class UnpackableObject>
-UnpackableObject unpack(const std::list<uint8_t> &data) {
-  return unpack < UnpackableObject > (data.data(), data.size());
+UnpackableObject unpack(const std::vector<uint8_t> &data, std::error_code &ec) {
+  return unpack<UnpackableObject>(data.data(), data.size(), ec);
+}
+
+template<class UnpackableObject>
+UnpackableObject unpack(const std::vector<uint8_t> &data) {
+  std::error_code ec;
+  return unpack<UnpackableObject>(data.data(), data.size(), ec);
 }
 }
 
