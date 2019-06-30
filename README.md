@@ -10,6 +10,7 @@ Msgpack is a binary serialization specification. It allows you to save and load 
 - Easy to use
 - Automatic type handling
 - Open source MIT license
+- Easy error handling
 
 ### Single Header only template library
 Want to use this library? Just #include the header and you're good to go. Its less than 1000 lines of code.
@@ -42,8 +43,6 @@ int main() {
 
 
 ### Roadmap
-- Error handling
-  - Currently, the unpacker isn't checking bounds as it deserializes data. Corrupted data would cause undefined behavior, so that will be fixed soon.
 - Support for extension types
   - The msgpack spec allows for additional types to be enumerated as Extensions. If reasonable use cases come about for this feature then it may be added.
 - Name/value pairs
