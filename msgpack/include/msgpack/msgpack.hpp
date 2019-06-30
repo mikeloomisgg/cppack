@@ -155,7 +155,7 @@ class Packer {
     } else if constexpr (is_container<T>::value) {
       pack_array(value);
     } else {
-      static_assert(false, "Unknown types cannot be serialized from.");
+      std::cerr << "Unknown type.\n";
     }
   }
 
@@ -524,7 +524,7 @@ class Unpacker {
     } else if constexpr (is_container<T>::value) {
       unpack_array(value);
     } else {
-      static_assert(false, "Unknown types cannot be deserialized into.");
+      std::cerr << "Unknown type.\n";
     }
   }
 
