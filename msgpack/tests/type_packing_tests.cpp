@@ -18,7 +18,7 @@ TEST_CASE("Boolean type packing") {
   auto unpacker = msgpack::Unpacker{};
   auto bool_obj = false;
   packer.process(bool_obj);
-  unpacker.set_data(packer.vector().data());
+  unpacker.set_data(packer.vector().data(), packer.vector().size());
   bool_obj = true;
   unpacker.process(bool_obj);
   REQUIRE(packer.vector() == std::vector<uint8_t>{0xc2});
@@ -27,7 +27,7 @@ TEST_CASE("Boolean type packing") {
   bool_obj = true;
   packer.clear();
   packer.process(bool_obj);
-  unpacker.set_data(packer.vector().data());
+  unpacker.set_data(packer.vector().data(), packer.vector().size());
   bool_obj = false;
   unpacker.process(bool_obj);
   REQUIRE(packer.vector() == std::vector<uint8_t>{0xc3});
@@ -43,7 +43,7 @@ TEST_CASE("Integer type packing") {
     packer.clear();
     packer.process(test_num);
     uint8_t x = 0U;
-    unpacker.set_data(packer.vector().data());
+    unpacker.set_data(packer.vector().data(), packer.vector().size());
     unpacker.process(x);
     REQUIRE(x == test_num);
   }
@@ -53,7 +53,7 @@ TEST_CASE("Integer type packing") {
     packer.clear();
     packer.process(test_num);
     uint16_t x = 0U;
-    unpacker.set_data(packer.vector().data());
+    unpacker.set_data(packer.vector().data(), packer.vector().size());
     unpacker.process(x);
     REQUIRE(x == test_num);
   }
@@ -63,7 +63,7 @@ TEST_CASE("Integer type packing") {
     packer.clear();
     packer.process(test_num);
     uint32_t x = 0U;
-    unpacker.set_data(packer.vector().data());
+    unpacker.set_data(packer.vector().data(), packer.vector().size());
     unpacker.process(x);
     REQUIRE(x == test_num);
   }
@@ -73,7 +73,7 @@ TEST_CASE("Integer type packing") {
     packer.clear();
     packer.process(test_num);
     uint64_t x = 0U;
-    unpacker.set_data(packer.vector().data());
+    unpacker.set_data(packer.vector().data(), packer.vector().size());
     unpacker.process(x);
     REQUIRE(x == test_num);
   }
@@ -83,7 +83,7 @@ TEST_CASE("Integer type packing") {
     packer.clear();
     packer.process(test_num);
     int8_t x = 0;
-    unpacker.set_data(packer.vector().data());
+    unpacker.set_data(packer.vector().data(), packer.vector().size());
     unpacker.process(x);
     REQUIRE(x == test_num);
   }
@@ -93,7 +93,7 @@ TEST_CASE("Integer type packing") {
     packer.clear();
     packer.process(test_num);
     int16_t x = 0;
-    unpacker.set_data(packer.vector().data());
+    unpacker.set_data(packer.vector().data(), packer.vector().size());
     unpacker.process(x);
     REQUIRE(x == test_num);
   }
@@ -103,7 +103,7 @@ TEST_CASE("Integer type packing") {
     packer.clear();
     packer.process(test_num);
     int32_t x = 0;
-    unpacker.set_data(packer.vector().data());
+    unpacker.set_data(packer.vector().data(), packer.vector().size());
     unpacker.process(x);
     REQUIRE(x == test_num);
   }
@@ -113,7 +113,7 @@ TEST_CASE("Integer type packing") {
     packer.clear();
     packer.process(test_num);
     int64_t x = 0;
-    unpacker.set_data(packer.vector().data());
+    unpacker.set_data(packer.vector().data(), packer.vector().size());
     unpacker.process(x);
     REQUIRE(x == test_num);
   }
@@ -128,7 +128,7 @@ TEST_CASE("Float type packing") {
     packer.clear();
     packer.process(test_num);
     float x = 0.0f;
-    unpacker.set_data(packer.vector().data());
+    unpacker.set_data(packer.vector().data(), packer.vector().size());
     unpacker.process(x);
     REQUIRE(x == test_num);
   }
@@ -138,7 +138,7 @@ TEST_CASE("Float type packing") {
     packer.clear();
     packer.process(test_num);
     double x = 0.0;
-    unpacker.set_data(packer.vector().data());
+    unpacker.set_data(packer.vector().data(), packer.vector().size());
     unpacker.process(x);
     REQUIRE(x == test_num);
   }
@@ -151,7 +151,7 @@ TEST_CASE("String type packing") {
   auto str1 = std::string("test");
   packer.process(str1);
   str1 = "";
-  unpacker.set_data(packer.vector().data());
+  unpacker.set_data(packer.vector().data(), packer.vector().size());
   unpacker.process(str1);
   REQUIRE(packer.vector() == std::vector<uint8_t>{0b10100000 | 4, 't', 'e', 's', 't'});
   REQUIRE(str1 == "test");
@@ -164,7 +164,7 @@ TEST_CASE("Byte array type packing") {
   auto vec1 = std::vector<uint8_t>{1, 2, 3, 4};
   packer.process(vec1);
   vec1.clear();
-  unpacker.set_data(packer.vector().data());
+  unpacker.set_data(packer.vector().data(), packer.vector().size());
   unpacker.process(vec1);
   REQUIRE(packer.vector() == std::vector<uint8_t>{0xc4, 4, 1, 2, 3, 4});
   REQUIRE(vec1 == std::vector<uint8_t>{1, 2, 3, 4});
@@ -177,7 +177,7 @@ TEST_CASE("Array type packing") {
   auto list1 = std::list<std::string>{"one", "two", "three"};
   packer.process(list1);
   list1.clear();
-  unpacker.set_data(packer.vector().data());
+  unpacker.set_data(packer.vector().data(), packer.vector().size());
   unpacker.process(list1);
   REQUIRE(packer.vector() == std::vector<uint8_t>{0b10010000 | 3, 0b10100000 | 3, 'o', 'n', 'e',
                                                   0b10100000 | 3, 't', 'w', 'o',
@@ -192,7 +192,7 @@ TEST_CASE("Map type packing") {
   auto map1 = std::map<uint8_t, std::string>{std::make_pair(0, "zero"), std::make_pair(1, "one")};
   packer.process(map1);
   map1.clear();
-  unpacker.set_data(packer.vector().data());
+  unpacker.set_data(packer.vector().data(), packer.vector().size());
   unpacker.process(map1);
   REQUIRE(packer.vector() == std::vector<uint8_t>{0b10000000 | 2, 0, 0b10100000 | 4, 'z', 'e', 'r', 'o',
                                                   1, 0b10100000 | 3, 'o', 'n', 'e'});
