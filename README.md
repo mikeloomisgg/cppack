@@ -4,6 +4,8 @@ A modern (c++17 required) implementation of the [msgpack spec](https://github.co
 
 Msgpack is a binary serialization specification. It allows you to save and load application objects like classes and structs over networks, to files, and between programs and even different languages.
 
+Check out [this blog](https://mikeloomisgg.github.io/2019-07-02-making-a-serialization-library/) for my rational creating this library.
+
 ## Features
 - Fast and compact
 - Full test coverage
