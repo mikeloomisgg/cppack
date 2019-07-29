@@ -966,6 +966,13 @@ std::vector<uint8_t> pack(PackableObject &obj) {
   return packer.vector();
 }
 
+template<class PackableObject>
+std::vector<uint8_t> pack(PackableObject &&obj) {
+  auto packer = Packer{};
+  obj.msgpack(packer);
+  return packer.vector();
+}
+
 template<class UnpackableObject>
 UnpackableObject unpack(const uint8_t *data_start, const std::size_t size, std::error_code &ec) {
   auto obj = UnpackableObject{};
