@@ -155,7 +155,9 @@ class Packer {
     } else if constexpr (is_container<T>::value) {
       pack_array(value);
     } else {
-      std::cerr << "Unknown type.\n";
+      auto recursive_packer = Packer{};
+      const_cast<T &>(value).pack(recursive_packer);
+      pack_type(recursive_packer.vector());
     }
   }
 
@@ -524,7 +526,12 @@ class Unpacker {
     } else if constexpr (is_container<T>::value) {
       unpack_array(value);
     } else {
-      std::cerr << "Unknown type.\n";
+      auto recursive_data = std::vector<uint8_t>{};
+      unpack_type(recursive_data);
+
+      auto recursive_unpacker = Unpacker{recursive_data.data(), recursive_data.size()};
+      value.pack(recursive_unpacker);
+      ec = recursive_unpacker.ec;
     }
   }
 

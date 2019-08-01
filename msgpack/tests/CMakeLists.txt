@@ -7,6 +7,7 @@ add_executable(Msgpack_tests
                type_packing_tests.cpp
                examples.cpp
                error_handling.cpp
+               object_packing_tests.cpp
                )
 
 if (MSVC)
