@@ -10,7 +10,7 @@ struct Example {
   std::map<std::string, bool> map;
 
   template<class T>
-  void msgpack(T &pack) {
+  void pack(T &pack) {
     pack(map);
   }
 };
