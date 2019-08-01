@@ -128,13 +128,13 @@ class Packer {
  public:
 
   template<class ... Types>
-  void operator()(Types &... args) {
-    (pack_type(std::forward<Types &>(args)), ...);
+  void operator()(const Types &... args) {
+    (pack_type(std::forward<const Types &>(args)), ...);
   }
 
   template<class ... Types>
-  void process(Types &... args) {
-    (pack_type(std::forward<Types &>(args)), ...);
+  void process(const Types &... args) {
+    (pack_type(std::forward<const Types &>(args)), ...);
   }
 
   const std::vector<uint8_t> &vector() const {
@@ -478,7 +478,7 @@ class Unpacker {
  public:
   Unpacker() : data_pointer(nullptr), data_end(nullptr) {};
 
-  Unpacker(const uint8_t *data_start, const std::size_t bytes)
+  Unpacker(const uint8_t *data_start, std::size_t bytes)
       : data_pointer(data_start), data_end(data_start + bytes) {};
 
   template<class ... Types>
@@ -962,14 +962,14 @@ void Unpacker::unpack_type(std::vector<uint8_t> &value) {
 template<class PackableObject>
 std::vector<uint8_t> pack(PackableObject &obj) {
   auto packer = Packer{};
-  obj.msgpack(packer);
+  obj.pack(packer);
   return packer.vector();
 }
 
 template<class PackableObject>
 std::vector<uint8_t> pack(PackableObject &&obj) {
   auto packer = Packer{};
-  obj.msgpack(packer);
+  obj.pack(packer);
   return packer.vector();
 }
 
@@ -977,7 +977,7 @@ template<class UnpackableObject>
 UnpackableObject unpack(const uint8_t *data_start, const std::size_t size, std::error_code &ec) {
   auto obj = UnpackableObject{};
   auto unpacker = Unpacker(data_start, size);
-  obj.msgpack(unpacker);
+  obj.pack(unpacker);
   ec = unpacker.ec;
   return obj;
 }
