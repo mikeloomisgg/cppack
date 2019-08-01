@@ -185,6 +185,21 @@ TEST_CASE("Array type packing") {
   REQUIRE(list1 == std::list<std::string>{"one", "two", "three"});
 }
 
+TEST_CASE("std::array type packing") {
+  auto packer = msgpack::Packer{};
+  auto unpacker = msgpack::Unpacker{};
+
+  auto arr = std::array<std::string, 3>{"one", "two", "three"};
+  packer.process(arr);
+  arr.fill("");
+  unpacker.set_data(packer.vector().data(), packer.vector().size());
+  unpacker.process(arr);
+  REQUIRE(packer.vector() == std::vector<uint8_t>{0b10010000 | 3, 0b10100000 | 3, 'o', 'n', 'e',
+                                                  0b10100000 | 3, 't', 'w', 'o',
+                                                  0b10100000 | 5, 't', 'h', 'r', 'e', 'e'});
+  REQUIRE(arr == std::array<std::string, 3>{"one", "two", "three"});
+}
+
 TEST_CASE("Map type packing") {
   auto packer = msgpack::Packer{};
   auto unpacker = msgpack::Unpacker{};

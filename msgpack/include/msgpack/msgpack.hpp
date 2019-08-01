@@ -10,6 +10,7 @@
 #include <set>
 #include <list>
 #include <map>
+#include <array>
 #include <cmath>
 #include <bitset>
 
@@ -115,6 +116,16 @@ struct is_container<std::set<T, Alloc> > {
 };
 
 template<class T>
+struct is_stdarray {
+  static const bool value = false;
+};
+
+template<class T, std::size_t N>
+struct is_stdarray<std::array<T, N>> {
+  static const bool value = true;
+};
+
+template<class T>
 struct is_map {
   static const bool value = false;
 };
@@ -152,7 +163,7 @@ class Packer {
   void pack_type(const T &value) {
     if constexpr(is_map<T>::value) {
       pack_map(value);
-    } else if constexpr (is_container<T>::value) {
+    } else if constexpr (is_container<T>::value || is_stdarray<T>::value) {
       pack_array(value);
     } else {
       auto recursive_packer = Packer{};
@@ -525,6 +536,8 @@ class Unpacker {
       unpack_map(value);
     } else if constexpr (is_container<T>::value) {
       unpack_array(value);
+    } else if constexpr (is_stdarray<T>::value) {
+      unpack_stdarray(value);
     } else {
       auto recursive_data = std::vector<uint8_t>{};
       unpack_type(recursive_data);
@@ -572,6 +585,14 @@ class Unpacker {
         array.emplace_back(val);
       }
     }
+  }
+
+  template<class T>
+  void unpack_stdarray(T &array) {
+    using ValueType = typename T::value_type;
+    auto vec = std::vector<ValueType>{};
+    unpack_array(vec);
+    std::copy(vec.begin(), vec.end(), array.begin());
   }
 
   template<class T>
