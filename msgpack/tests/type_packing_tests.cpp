@@ -119,6 +119,21 @@ TEST_CASE("Integer type packing") {
   }
 }
 
+TEST_CASE("Chrono type packing") {
+  auto packer = msgpack::Packer{};
+  auto unpacker = msgpack::Unpacker{};
+
+  auto test_time_point = std::chrono::steady_clock::now();
+  auto test_time_point_copy = test_time_point;
+
+  packer.process(test_time_point);
+  test_time_point = std::chrono::steady_clock::time_point{};
+  REQUIRE(test_time_point != test_time_point_copy);
+  unpacker.set_data(packer.vector().data(), packer.vector().size());
+  unpacker.process(test_time_point);
+  REQUIRE(test_time_point == test_time_point_copy);
+}
+
 TEST_CASE("Float type packing") {
   auto packer = msgpack::Packer{};
   auto unpacker = msgpack::Unpacker{};
@@ -212,4 +227,18 @@ TEST_CASE("Map type packing") {
   REQUIRE(packer.vector() == std::vector<uint8_t>{0b10000000 | 2, 0, 0b10100000 | 4, 'z', 'e', 'r', 'o',
                                                   1, 0b10100000 | 3, 'o', 'n', 'e'});
   REQUIRE(map1 == std::map<uint8_t, std::string>{std::make_pair(0, "zero"), std::make_pair(1, "one")});
+}
+
+TEST_CASE("Unordered map packing") {
+  auto packer = msgpack::Packer{};
+  auto unpacker = msgpack::Unpacker{};
+
+  auto map1 = std::unordered_map<uint8_t, std::string>{std::make_pair(0, "zero"), std::make_pair(1, "one")};
+  packer.process(map1);
+  map1.clear();
+  unpacker.set_data(packer.vector().data(), packer.vector().size());
+  unpacker.process(map1);
+  REQUIRE(packer.vector() == std::vector<uint8_t>{0b10000000 | 2, 0, 0b10100000 | 4, 'z', 'e', 'r', 'o',
+                                                  1, 0b10100000 | 3, 'o', 'n', 'e'});
+  REQUIRE(map1 == std::unordered_map<uint8_t, std::string>{std::make_pair(0, "zero"), std::make_pair(1, "one")});
 }

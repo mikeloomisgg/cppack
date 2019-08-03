@@ -5,12 +5,12 @@
 #ifndef CPPACK_PACKER_HPP
 #define CPPACK_PACKER_HPP
 
-#include <iostream>
 #include <vector>
 #include <set>
 #include <list>
 #include <map>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <bitset>
 
@@ -111,6 +111,11 @@ struct is_container<std::map<T, Alloc> > {
 };
 
 template<class T, class Alloc>
+struct is_container<std::unordered_map<T, Alloc> > {
+  static const bool value = true;
+};
+
+template<class T, class Alloc>
 struct is_container<std::set<T, Alloc> > {
   static const bool value = true;
 };
@@ -132,6 +137,11 @@ struct is_map {
 
 template<class T, class Alloc>
 struct is_map<std::map<T, Alloc> > {
+  static const bool value = true;
+};
+
+template<class T, class Alloc>
+struct is_map<std::unordered_map<T, Alloc> > {
   static const bool value = true;
 };
 
@@ -170,6 +180,11 @@ class Packer {
       const_cast<T &>(value).pack(recursive_packer);
       pack_type(recursive_packer.vector());
     }
+  }
+
+  template<class T>
+  void pack_type(const std::chrono::time_point<T> &value) {
+    pack_type(value.time_since_epoch().count());
   }
 
   template<class T>
@@ -546,6 +561,13 @@ class Unpacker {
       value.pack(recursive_unpacker);
       ec = recursive_unpacker.ec;
     }
+  }
+
+  template<class Clock, class Duration>
+  void unpack_type(std::chrono::time_point<Clock, Duration> &value) {
+    auto placeholder = std::chrono::time_point<Clock, Duration>::rep{};
+    unpack_type(placeholder);
+    value = std::chrono::time_point<Clock, Duration>{Duration{placeholder}};
   }
 
   template<class T>
