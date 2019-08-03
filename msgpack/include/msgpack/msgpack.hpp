@@ -565,12 +565,12 @@ class Unpacker {
 
   template<class Clock, class Duration>
   void unpack_type(std::chrono::time_point<Clock, Duration> &value) {
-    using RepType = std::chrono::time_point<Clock, Duration>::rep;
-    using DurationType = Duration;
-    using TimepointType = std::chrono::time_point<Clock, Duration>;
+    using RepType = typename std::chrono::time_point<Clock, Duration>::rep;
+    using DurationType = typename Duration;
+    using TimepointType = typename std::chrono::time_point<Clock, Duration>;
     auto placeholder = RepType{};
     unpack_type(placeholder);
-    value = TimepointType{DurationType(placeholder)};
+    value = TimepointType(DurationType(placeholder));
   }
 
   template<class T>
