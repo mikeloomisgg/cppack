@@ -239,8 +239,6 @@ TEST_CASE("Unordered map packing") {
   map1.clear();
   unpacker.set_data(packer.vector().data(), packer.vector().size());
   unpacker.process(map1);
-  REQUIRE(packer.vector() == std::vector<uint8_t>{0b10000000 | 2, 0, 0b10100000 | 4, 'z', 'e', 'r', 'o',
-                                                  1, 0b10100000 | 3, 'o', 'n', 'e'});
   REQUIRE(map1[0] == map_copy[0]);
   REQUIRE(map1[1] == map_copy[1]);
 }
