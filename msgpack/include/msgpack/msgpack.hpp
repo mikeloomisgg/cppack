@@ -570,7 +570,7 @@ class Unpacker {
     using TimepointType = std::chrono::time_point<Clock, Duration>;
     auto placeholder = RepType{};
     unpack_type(placeholder);
-    value = TimepointType{DurationType{placeholder}};
+    value = TimepointType{DurationType(placeholder)};
   }
 
   template<class T>
