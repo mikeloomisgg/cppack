@@ -211,9 +211,10 @@ class Packer {
     } else if constexpr (is_container<T>::value || is_stdarray<T>::value) {
       pack_array(value);
     } else {
-      auto recursive_packer = Packer{};
+      auto recursive_packer = Packer<nvp_packing>{};
       const_cast<T &>(value).pack(recursive_packer);
-      pack_type(recursive_packer.vector());
+      auto vec = recursive_packer.vector();
+      serialized_object.insert(serialized_object.end(), vec.begin(), vec.end());
     }
   }
 
@@ -592,12 +593,9 @@ class Unpacker {
     } else if constexpr (is_stdarray<T>::value) {
       unpack_stdarray(value);
     } else {
-      auto recursive_data = std::vector<uint8_t>{};
-      unpack_type(recursive_data);
-
-      auto recursive_unpacker = Unpacker{recursive_data.data(), recursive_data.size()};
-      value.pack(recursive_unpacker);
-      ec = recursive_unpacker.ec;
+      auto unpacker = Unpacker<nvp_unpacking>{data_pointer, static_cast<std::size_t>(data_end - data_pointer)};
+      value.pack(unpacker);
+      ec = unpacker.ec;
     }
   }
 
@@ -1131,7 +1129,7 @@ UnpackableObject nvp_unpack(const std::vector<uint8_t> &data, std::error_code &e
 template<class UnpackableObject>
 UnpackableObject nvp_unpack(const std::vector<uint8_t> &data) {
   std::error_code ec;
-  return nvp_unpack < UnpackableObject > (data.data(), data.size(), ec);
+  return nvp_unpack<UnpackableObject>(data.data(), data.size(), ec);
 }
 }
 

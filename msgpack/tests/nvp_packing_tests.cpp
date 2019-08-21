@@ -6,6 +6,8 @@
 
 #include "msgpack/msgpack.hpp"
 
+#include <iomanip>
+
 struct ManyTypes {
   int a = 1;
   float b = 0.5;
@@ -17,6 +19,15 @@ struct ManyTypes {
   template<class T>
   void pack(T &pack) {
     pack(a, b, c, d, e, f);
+  }
+};
+
+struct ObjectWithNestedType {
+  ManyTypes a{};
+
+  template<class T>
+  void pack(T &pack) {
+    pack(a);
   }
 };
 
@@ -45,4 +56,14 @@ TEST_CASE("Can unpack javascript objects") {
   REQUIRE(msgpack::nvp_unpack<ManyTypes>(imported_js_msgpack).d == std::nullptr_t{});
   REQUIRE(msgpack::nvp_unpack<ManyTypes>(imported_js_msgpack).e == "foo bar");
   REQUIRE(msgpack::nvp_unpack<ManyTypes>(imported_js_msgpack).f == std::array<std::string, 2>{{"foo", "bar"}});
+}
+
+TEST_CASE("Nested types can also be packed with NVP style") {
+  ObjectWithNestedType test{};
+  auto data = msgpack::nvp_pack(test);
+
+  REQUIRE(data == std::vector<uint8_t>{0x81, 0xA1, 0x30, 0x86, 0xA1, 0x30, 0x01, 0xA1, 0x31, 0xCA, 0x3F, 0x00, 0x00,
+                                       0x00, 0xA1, 0x32, 0xC3, 0xA1, 0x33, 0xC0, 0xA1, 0x34, 0xA7, 0x46, 0x6F, 0x6F,
+                                       0x20, 0x62, 0x61, 0x72, 0xA1, 0x35, 0x92, 0xA3, 0x46, 0x6F, 0x6F, 0xA3, 0x42,
+                                       0x61, 0x72});
 }
