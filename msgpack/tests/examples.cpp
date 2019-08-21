@@ -46,4 +46,6 @@ TEST_CASE("Unpack with error handling") {
     REQUIRE(true);
   else
     REQUIRE(false);
+  REQUIRE(!unpacked_object.compact);
+  REQUIRE(!unpacked_object.schema);
 }

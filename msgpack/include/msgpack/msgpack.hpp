@@ -703,7 +703,7 @@ class Unpacker {
     }
   }
 
-  void unpack_map(std::map<std::string, skip> map) {
+  void unpack_map(std::map<std::string, skip> /*map*/) {
     if (safe_data() == map32) {
       safe_increment();
       std::size_t map_size = 0;
@@ -719,7 +719,6 @@ class Unpacker {
         safe_increment();
       }
     } else {
-      std::size_t map_size = safe_data() & 0b00001111;
       safe_increment();
     }
   }
