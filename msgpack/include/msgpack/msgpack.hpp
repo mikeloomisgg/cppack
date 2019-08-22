@@ -13,8 +13,7 @@
 #include <chrono>
 #include <cmath>
 #include <bitset>
-
-#include <iostream>
+#include <unordered_map>
 
 namespace msgpack {
 enum class UnpackerError {
@@ -563,11 +562,16 @@ class Unpacker {
     data_end = data_pointer + size;
   }
 
+  std::size_t bytes() {
+    return bytes_consumed;
+  }
+
   std::error_code ec{};
 
  private:
   const uint8_t *data_pointer;
   const uint8_t *data_end;
+  std::size_t bytes_consumed{};
 
   uint8_t safe_data() {
     if (data_pointer < data_end)
@@ -579,6 +583,7 @@ class Unpacker {
   void safe_increment(int64_t bytes = 1) {
     if (data_end - data_pointer >= 0) {
       data_pointer += bytes;
+      bytes_consumed += bytes;
     } else {
       ec = UnpackerError::OutOfRange;
     }
@@ -595,6 +600,7 @@ class Unpacker {
     } else {
       auto unpacker = Unpacker<nvp_unpacking>{data_pointer, static_cast<std::size_t>(data_end - data_pointer)};
       value.pack(unpacker);
+      safe_increment(unpacker.bytes());
       ec = unpacker.ec;
     }
   }
