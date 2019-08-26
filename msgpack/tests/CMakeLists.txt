@@ -8,6 +8,7 @@ add_executable(Msgpack_tests
                examples.cpp
                error_handling.cpp
                object_packing_tests.cpp
+               nvp_packing_tests.cpp
                )
 
 if (MSVC)
@@ -22,3 +23,6 @@ target_link_libraries(Msgpack_tests
 
 set_target_properties(Msgpack_tests PROPERTIES CXX_STANDARD 17)
 target_compile_features(Msgpack_tests PUBLIC cxx_std_17)
+
+include(Catch)
+catch_discover_tests(Msgpack_tests)

@@ -15,11 +15,12 @@ Check out [this blog](https://mikeloomisgg.github.io/2019-07-02-making-a-seriali
 - Easy error handling
 
 ### Single Header only template library
-Want to use this library? Just #include the header and you're good to go. Its less than 1000 lines of code.
-
+Want to use this library? Just #include the header and you're good to go. You can also install it like a normal cmake package if you know how that works.
 
 ### Cereal style packaging
 Easily pack objects into byte arrays using a pack free function:
+
+Be aware that you will need to use the nvp_pack (name value pair) methods to have interop with python or javascript msgpack libraries.
 
 ```c++
 struct Person {
@@ -28,7 +29,7 @@ struct Person {
   std::vector<std::string> aliases;
 
   template<class T>
-  void msgpack(T &pack) {
+  void pack(T &pack) {
     pack(name, age, aliases);
   }
 };
@@ -47,7 +48,6 @@ int main() {
 ### Roadmap
 - Support for extension types
   - The msgpack spec allows for additional types to be enumerated as Extensions. If reasonable use cases come about for this feature then it may be added.
-- Name/value pairs
-  - The msgpack spec uses the 'map' type differently than this library. This library implements maps in which key/value pairs must all have the same value types.
+- Support for unpacking types memberwise with callbacks for async reading of packed objects
 - Endian conversion shortcuts
   - On platforms that already hold types in big endian, the serialization could be optimized using type traits.
