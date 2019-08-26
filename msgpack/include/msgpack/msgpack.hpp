@@ -427,7 +427,8 @@ class Packer {
     if (fractional_remainder == 0) { // Just pack as int
       pack_type(int64_t(integral_part));
     } else {
-      static_assert(std::numeric_limits<float>::radix == 2); // TODO: Handle decimal floats
+      // TODO: Handle decimal floats, some systems will use base 10 floats. Until then don't compile
+      static_assert(std::numeric_limits<float>::radix == 2);
       auto exponent = ilogb(value);
       float full_mantissa = value / float(scalbn(1.0, exponent));
       auto sign_mask = std::bitset<32>(uint32_t(std::signbit(full_mantissa)) << 31);
@@ -451,6 +452,7 @@ class Packer {
     }
   }
 
+  // TODO: Tested serialized doubles from javascript weren't unpacking correctly
   void pack_type(const double &value) {
     double integral_part;
     double fractional_remainder = modf(value, &integral_part);
@@ -458,7 +460,7 @@ class Packer {
     if (fractional_remainder == 0) { // Just pack as int
       pack_type(int64_t(integral_part));
     } else {
-      static_assert(std::numeric_limits<float>::radix == 2); // TODO: Handle decimal floats
+      static_assert(std::numeric_limits<float>::radix == 2);
       auto exponent = ilogb(value);
       double full_mantissa = value / scalbn(1.0, exponent);
       auto sign_mask = std::bitset<64>(uint64_t(std::signbit(full_mantissa)) << 63);
@@ -735,175 +737,333 @@ class Unpacker {
   }
 
   void unpack_type(int8_t &value) {
-    if (safe_data() == int8) {
-      safe_increment();
-      value = safe_data();
-      safe_increment();
-    } else {
-      value = safe_data();
-      safe_increment();
+    auto flag = safe_data();
+    switch (flag) {
+      case int8: {
+        safe_increment();
+        value = safe_data();
+        safe_increment();
+        break;
+      }
+      case uint8: {
+        uint8_t val{};
+        unpack_type(val);
+        value = val;
+        break;
+      }
+      default:
+        value = safe_data();
+        safe_increment();
+        break;
     }
   }
 
   void unpack_type(int16_t &value) {
-    if (safe_data() == int16) {
-      safe_increment();
-      std::bitset<16> bits;
-      for (auto i = sizeof(uint16_t); i > 0; --i) {
-        bits |= uint16_t(safe_data()) << 8 * (i - 1);
+    auto flag = safe_data();
+    switch (flag) {
+      case int16: {
         safe_increment();
+        std::bitset<16> bits;
+        for (auto i = sizeof(uint16_t); i > 0; --i) {
+          bits |= uint16_t(safe_data()) << 8 * (i - 1);
+          safe_increment();
+        }
+        if (bits[15]) {
+          value = -1 * (uint16_t((~bits).to_ulong()) + 1);
+        } else {
+          value = uint16_t(bits.to_ulong());
+        }
+        break;
       }
-      if (bits[15]) {
-        value = -1 * (uint16_t((~bits).to_ulong()) + 1);
-      } else {
-        value = uint16_t(bits.to_ulong());
+      case int8: {
+        int8_t val{};
+        unpack_type(val);
+        value = val;
+        break;
       }
-    } else if (safe_data() == int8) {
-      int8_t val;
-      unpack_type(val);
-      value = val;
-    } else {
-      value = safe_data();
-      safe_increment();
+      case uint8: {
+        uint8_t val{};
+        unpack_type(val);
+        value = val;
+        break;
+      }
+      default:
+        value = safe_data();
+        safe_increment();
+        break;
     }
   }
 
   void unpack_type(int32_t &value) {
-    if (safe_data() == int32) {
-      safe_increment();
-      std::bitset<32> bits;
-      for (auto i = sizeof(uint32_t); i > 0; --i) {
-        bits |= uint32_t(safe_data()) << 8 * (i - 1);
+    auto flag = safe_data();
+    switch (flag) {
+      case int32: {
         safe_increment();
+        std::bitset<32> bits;
+        for (auto i = sizeof(uint32_t); i > 0; --i) {
+          bits |= uint32_t(safe_data()) << 8 * (i - 1);
+          safe_increment();
+        }
+        if (bits[31]) {
+          value = -1 * ((~bits).to_ulong() + 1);
+        } else {
+          value = bits.to_ulong();
+        }
+        break;
       }
-      if (bits[31]) {
-        value = -1 * ((~bits).to_ulong() + 1);
-      } else {
-        value = bits.to_ulong();
+      case int16: {
+        int16_t val{};
+        unpack_type(val);
+        value = val;
+        break;
       }
-    } else if (safe_data() == int16) {
-      int16_t val;
-      unpack_type(val);
-      value = val;
-    } else if (safe_data() == int8) {
-      int8_t val;
-      unpack_type(val);
-      value = val;
-    } else {
-      value = safe_data();
-      safe_increment();
+      case int8: {
+        int8_t val{};
+        unpack_type(val);
+        value = val;
+        break;
+      }
+      case uint16: {
+        uint16_t val{};
+        unpack_type(val);
+        value = val;
+        break;
+      }
+      case uint8: {
+        uint8_t val{};
+        unpack_type(val);
+        value = val;
+        break;
+      }
+      default:
+        value = safe_data();
+        safe_increment();
+        break;
     }
   }
 
   void unpack_type(int64_t &value) {
-    if (safe_data() == int64) {
-      safe_increment();
-      std::bitset<64> bits;
-      for (auto i = sizeof(value); i > 0; --i) {
-        bits |= std::bitset<8>(safe_data()).to_ullong() << 8 * (i - 1);
+    auto flag = safe_data();
+    switch (flag) {
+      case int64: {
         safe_increment();
+        std::bitset<64> bits;
+        for (auto i = sizeof(value); i > 0; --i) {
+          bits |= std::bitset<8>(safe_data()).to_ullong() << 8 * (i - 1);
+          safe_increment();
+        }
+        if (bits[63]) {
+          value = -1 * ((~bits).to_ullong() + 1);
+        } else {
+          value = bits.to_ullong();
+        }
+        break;
       }
-      if (bits[63]) {
-        value = -1 * ((~bits).to_ullong() + 1);
-      } else {
-        value = bits.to_ullong();
+      case int32: {
+        int32_t val{};
+        unpack_type(val);
+        value = val;
+        break;
       }
-    } else if (safe_data() == int32) {
-      int32_t val;
-      unpack_type(val);
-      value = val;
-    } else if (safe_data() == int16) {
-      int16_t val;
-      unpack_type(val);
-      value = val;
-    } else if (safe_data() == int8) {
-      int8_t val;
-      unpack_type(val);
-      value = val;
-    } else {
-      value = safe_data();
-      safe_increment();
+      case int16: {
+        int16_t val{};
+        unpack_type(val);
+        value = val;
+        break;
+      }
+      case int8: {
+        int8_t val{};
+        unpack_type(val);
+        value = val;
+        break;
+      }
+      case uint32: {
+        uint32_t val{};
+        unpack_type(val);
+        value = val;
+        break;
+      }
+      case uint16: {
+        uint16_t val{};
+        unpack_type(val);
+        value = val;
+        break;
+      }
+      case uint8: {
+        uint8_t val{};
+        unpack_type(val);
+        value = val;
+        break;
+      }
+      default:
+        value = safe_data();
+        safe_increment();
+        break;
     }
   }
 
   void unpack_type(uint8_t &value) {
-    if (safe_data() == uint8) {
-      safe_increment();
-      value = safe_data();
-      safe_increment();
-    } else {
-      value = safe_data();
-      safe_increment();
+    auto flag = safe_data();
+    switch (flag) {
+      case uint8: {
+        safe_increment();
+        value = safe_data();
+        safe_increment();
+        break;
+      }
+      case int8: {
+        safe_increment();
+        value = safe_data();
+        safe_increment();
+        break;
+      }
+      default:
+        value = safe_data();
+        safe_increment();
+        break;
     }
   }
 
   void unpack_type(uint16_t &value) {
-    if (safe_data() == uint16) {
-      safe_increment();
-      for (auto i = sizeof(uint16_t); i > 0; --i) {
-        value += safe_data() << 8 * (i - 1);
+    auto flag = safe_data();
+    switch (flag) {
+      case uint16: {
         safe_increment();
+        for (auto i = sizeof(uint16_t); i > 0; --i) {
+          value += safe_data() << 8 * (i - 1);
+          safe_increment();
+        }
+        break;
       }
-    } else if (safe_data() == uint8) {
-      safe_increment();
-      value = safe_data();
-      safe_increment();
-    } else {
-      value = safe_data();
-      safe_increment();
+      case uint8: {
+        uint8_t val{};
+        unpack_type(val);
+        value = static_cast<uint16_t>(val);
+        break;
+      }
+      case int16: {
+        int16_t val{};
+        unpack_type(val);
+        value = static_cast<uint16_t>(val);
+        break;
+      }
+      case int8: {
+        int8_t val{};
+        unpack_type(val);
+        value = static_cast<uint16_t>(val);
+        break;
+      }
+      default:
+        value = safe_data();
+        safe_increment();
+        break;
     }
   }
 
   void unpack_type(uint32_t &value) {
-    if (safe_data() == uint32) {
-      safe_increment();
-      for (auto i = sizeof(uint32_t); i > 0; --i) {
-        value += safe_data() << 8 * (i - 1);
+    auto flag = safe_data();
+    switch (flag) {
+      case uint32: {
         safe_increment();
+        for (auto i = sizeof(uint32_t); i > 0; --i) {
+          value += safe_data() << 8 * (i - 1);
+          safe_increment();
+        }
+        break;
       }
-    } else if (safe_data() == uint16) {
-      safe_increment();
-      for (auto i = sizeof(uint16_t); i > 0; --i) {
-        value += safe_data() << 8 * (i - 1);
+      case uint16: {
+        uint16_t val{};
+        unpack_type(val);
+        value = static_cast<uint32_t>(val);
+        break;
+      }
+      case uint8: {
+        uint8_t val{};
+        unpack_type(val);
+        value = static_cast<uint32_t>(val);
+        break;
+      }
+      case int32: {
+        int32_t val{};
+        unpack_type(val);
+        value = static_cast<uint32_t>(val);
+        break;
+      }
+      case int16: {
+        int16_t val{};
+        unpack_type(val);
+        value = static_cast<uint32_t>(val);
+        break;
+      }
+      case int8: {
+        int8_t val{};
+        unpack_type(val);
+        value = static_cast<uint32_t>(val);
+        break;
+      }
+      default:
+        value = safe_data();
         safe_increment();
-      }
-    } else if (safe_data() == uint8) {
-      safe_increment();
-      value = safe_data();
-      safe_increment();
-    } else {
-      value = safe_data();
-      safe_increment();
+        break;
     }
   }
 
   void unpack_type(uint64_t &value) {
-    if (safe_data() == uint64) {
-      safe_increment();
-      for (auto i = sizeof(uint64_t); i > 0; --i) {
-        value += uint64_t(safe_data()) << 8 * (i - 1);
+    auto flag = safe_data();
+    switch (flag) {
+      case uint64:
         safe_increment();
+        for (auto i = sizeof(uint64_t); i > 0; --i) {
+          value += uint64_t(safe_data()) << 8 * (i - 1);
+          safe_increment();
+        }
+        break;
+      case uint32: {
+        uint32_t val{};
+        unpack_type(val);
+        value = val;
+        break;
       }
-    } else if (safe_data() == uint32) {
-      safe_increment();
-      for (auto i = sizeof(uint32_t); i > 0; --i) {
-        value += uint64_t(safe_data()) << 8 * (i - 1);
+      case uint16: {
+        uint16_t val{};
+        unpack_type(val);
+        value = val;
+        break;
+      }
+      case uint8: {
+        uint8_t val{};
+        unpack_type(val);
+        value = val;
+        break;
+      }
+      case int64: {
+        int64_t val{};
+        unpack_type(val);
+        value = static_cast<uint64_t>(val);
+        break;
+      }
+      case int32: {
+        int32_t val{};
+        unpack_type(val);
+        value = static_cast<uint64_t>(val);
+        break;
+      }
+      case int16: {
+        int16_t val{};
+        unpack_type(val);
+        value = static_cast<uint64_t>(val);
+        break;
+      }
+      case int8: {
+        int8_t val{};
+        unpack_type(val);
+        value = static_cast<uint64_t>(val);
+        break;
+      }
+      default:
+        value = safe_data();
         safe_increment();
-      }
-      data_pointer++;
-    } else if (safe_data() == uint16) {
-      safe_increment();
-      for (auto i = sizeof(uint16_t); i > 0; --i) {
-        value += uint64_t(safe_data()) << 8 * (i - 1);
-        safe_increment();
-      }
-    } else if (safe_data() == uint8) {
-      safe_increment();
-      value = safe_data();
-      safe_increment();
-    } else {
-      value = safe_data();
-      safe_increment();
+        break;
     }
   }
 

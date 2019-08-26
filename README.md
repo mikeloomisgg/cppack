@@ -48,7 +48,6 @@ int main() {
 ### Roadmap
 - Support for extension types
   - The msgpack spec allows for additional types to be enumerated as Extensions. If reasonable use cases come about for this feature then it may be added.
-- Name/value pairs
-  - The msgpack spec uses the 'map' type differently than this library. This library implements maps in which key/value pairs must all have the same value types.
+- Support for unpacking types memberwise with callbacks for async reading of packed objects
 - Endian conversion shortcuts
   - On platforms that already hold types in big endian, the serialization could be optimized using type traits.
