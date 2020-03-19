@@ -1,0 +1,22 @@
+name: "cppack"
+version: "v1.0.0"
+cmake_minimum_required: "3.0"
+cmake_cxx_standard: "11"
+description: "A modern c++ implementation of the msgpack spec. - msgpack.org[C++17]"
+
+authors:
+  - name: "Mike Loomis"
+    email: "mikeloomisgg@gmail.com"
+
+origins:
+  - address: "https://wsjcpp.org/"
+    type: "package-registry"
+
+keywords:
+  - "c++"
+  - "base64"
+
+distribution:
+  - source-file: "msgpack/include/msgpack/msgpack.hpp"
+    target-file: "msgpack.hpp"
+    type: "source-code"
