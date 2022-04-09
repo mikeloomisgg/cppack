@@ -13,6 +13,8 @@
 #include <chrono>
 #include <cmath>
 #include <bitset>
+#include <system_error>
+#include <unordered_map>
 
 namespace msgpack {
 enum class UnpackerError {
