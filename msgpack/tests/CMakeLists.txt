@@ -14,7 +14,7 @@ add_executable(Msgpack_tests
                )
 
 if (MSVC)
-    target_compile_options(Msgpack_tests PRIVATE /WX /Zc:__cplusplus)
+    target_compile_options(Msgpack_tests PRIVATE /WX /Zc:__cplusplus /EHsc)
 else (MSVC)
     target_compile_options(Msgpack_tests PRIVATE -Wall -Wextra -pedantic -Werror)
 endif (MSVC)
