@@ -48,4 +48,6 @@ install(FILES
 export(EXPORT MsgpackTargets FILE ${CMAKE_CURRENT_BINARY_DIR}/MsgpackTargets.cmake NAMESPACE Msgpack::)
 export(PACKAGE Msgpack)
 
-add_subdirectory(tests)
+if(CPPACK_TESTS)
+  add_subdirectory(tests)
+endif()
