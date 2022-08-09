@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/mikeloomisgg/cppack.svg?branch=master)](https://travis-ci.com/mikeloomisgg/cppack)
+[![build](https://github.com/dacap/cppack/actions/workflows/build.yml/badge.svg)](https://github.com/dacap/cppack/actions/workflows/build.yml)
 # cppack
 A modern (c++17 required) implementation of the [msgpack spec](https://github.com/msgpack/msgpack/blob/master/spec.md).
 

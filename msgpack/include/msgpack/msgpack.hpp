@@ -13,6 +13,8 @@
 #include <chrono>
 #include <cmath>
 #include <bitset>
+#include <unordered_map>
+#include <system_error>
 
 namespace msgpack {
 enum class UnpackerError {
@@ -33,12 +35,12 @@ struct UnpackerErrCategory : public std::error_category {
         return "(unrecognized error)";
     }
   };
-};
 
-const UnpackerErrCategory theUnpackerErrCategory{};
+};
 
 inline
 std::error_code make_error_code(msgpack::UnpackerError e) {
+  static UnpackerErrCategory theUnpackerErrCategory;
   return {static_cast<int>(e), theUnpackerErrCategory};
 }
 }

@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.9)
-project(Msgpack LANGUAGES CXX VERSION 1.0)
 
 list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
@@ -49,4 +48,6 @@ install(FILES
 export(EXPORT MsgpackTargets FILE ${CMAKE_CURRENT_BINARY_DIR}/MsgpackTargets.cmake NAMESPACE Msgpack::)
 export(PACKAGE Msgpack)
 
-add_subdirectory(tests)
+if(CPPACK_TESTS)
+  add_subdirectory(tests)
+endif()
