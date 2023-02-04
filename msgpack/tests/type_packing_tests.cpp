@@ -147,9 +147,28 @@ TEST_CASE("Float type packing") {
     unpacker.process(x);
     REQUIRE(x == test_num);
   }
+  for (auto i = -5; i < 5; ++i) {
+    float test_num = float(i) * std::pow(0.1, std::abs(i));
+    packer.clear();
+    packer.process(test_num);
+    float x = 0.0f;
+    unpacker.set_data(packer.vector().data(), packer.vector().size());
+    unpacker.process(x);
+    REQUIRE(x == test_num);
+  }
 
   for (auto i = -5; i < 5; ++i) {
     double test_num = 5.0 + double(i) * 12345.67 / 4.56;
+    packer.clear();
+    packer.process(test_num);
+    double x = 0.0;
+    unpacker.set_data(packer.vector().data(), packer.vector().size());
+    unpacker.process(x);
+    REQUIRE(x == test_num);
+  }
+
+  for (auto i = -5; i < 5; ++i) {
+    double test_num = double(i) * std::pow(0.1, std::abs(i));
     packer.clear();
     packer.process(test_num);
     double x = 0.0;

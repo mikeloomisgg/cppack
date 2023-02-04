@@ -889,7 +889,7 @@ void Unpacker::unpack_type(float &value) {
     if (bits[31]) {
       mantissa *= -1;
     }
-    uint8_t exponent = 0;
+    int8_t exponent = 0;
     for (auto i = 0U; i < 8; ++i) {
       exponent += bits[i + 23] << i;
     }
@@ -928,7 +928,7 @@ void Unpacker::unpack_type(double &value) {
     if (bits[63]) {
       mantissa *= -1;
     }
-    uint16_t exponent = 0;
+    int16_t exponent = 0;
     for (auto i = 0U; i < 11; ++i) {
       exponent += bits[i + 52] << i;
     }
